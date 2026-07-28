@@ -182,6 +182,9 @@ resultados e usar IA contextual sem inventar dados do jogo.
   sua estrutura, execução, validação, build, dados locais e continuidade com IA.
 - O teste do workspace deixou de acessar `DashboardSummary.Goals`, removido junto
   com o Planejador; metas e convenes são validadas por seus repositórios próprios.
+- No modo `wails dev`, o Vite serve `/cache/*` diretamente de
+  `%AppData%\WaveArchive\assets`; não existe mais dependência do servidor inexistente
+  em `127.0.0.1:4180`. Em produção, o cache continua no handler nativo do Wails.
 
 ### 2026-07-28 — brain para IA
 
