@@ -17,3 +17,4 @@
 *.db-wal
 .idea/
 .vscode/
+wuwa_scraper.py
