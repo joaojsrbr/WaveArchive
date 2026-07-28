@@ -1,0 +1,50 @@
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { createManualBackup, dashboardSummary, diagnostics, exportArchive, getAccountSummary, getSettings, importArchive, listBackups, restoreBackup, saveAccountSummary, saveSettings } from "./lib/backend";
+import type { AccountSummary, AppSettings, DashboardSummary, Diagnostics } from "./types";
+import {parseArchive} from "./lib/archive";
+
+export function DashboardPage({onError,onNavigate}:{onError:(m:string)=>void;onNavigate:(p:any)=>void}){
+  const [data,setData]=useState<DashboardSummary>();
+  useEffect(()=>{void dashboardSummary().then(setData).catch(e=>onError(message(e)))},[]);
+  return <div className="workspacePage"><Intro eyebrow="CENTRO LOCAL-FIRST" title="VISÃO GERAL" text="Seu catálogo, theorycraft e progresso em um só lugar."/>
+    <div className="summaryGrid">{[["Personagens",data?.characters],["Armas",data?.weapons],["Echoes",data?.echoes],["Builds",data?.builds],["Equipes",data?.teams]].map(([label,value])=><article key={String(label)}><small>{label}</small><strong>{value??"—"}</strong></article>)}</div>
+    <div className="workspaceColumns"><section><h2>Builds recentes</h2>{data?.recentBuilds.length?data.recentBuilds.map(b=><article className="rowItem" key={b.id}><b>{b.name}</b><span>{b.characterName} · {b.gameVersion}</span></article>):<Empty text="Nenhuma build salva."/>}<button onClick={()=>onNavigate("builds")}>Abrir builds</button></section></div>
+  </div>
+}
+
+export function SettingsPage({onError}:{onError:(m:string)=>void}){
+  const [value,setValue]=useState<AppSettings>();const [saved,setSaved]=useState(false);
+  useEffect(()=>{void getSettings().then(setValue).catch(e=>onError(message(e)))},[]);
+  if(!value)return <Empty text="Carregando configurações…"/>;
+  async function submit(e:FormEvent){e.preventDefault();try{const next=await saveSettings(value!);setValue(next);document.documentElement.dataset.density=next.density;document.documentElement.classList.toggle("reduceMotion",next.reduceMotion);setSaved(true);setTimeout(()=>setSaved(false),1800);onError("")}catch(c){onError(message(c))}}
+  const providerDefaults={ollama:["http://127.0.0.1:11434","qwen2.5:7b"],lmstudio:["http://127.0.0.1:1234",""],gemini:["https://generativelanguage.googleapis.com","gemini-2.5-flash"]} as const;
+  return <div className="workspacePage"><Intro eyebrow="PREFERÊNCIAS PERSISTENTES" title="CONFIGURAÇÕES" text="Ajuste interface, privacidade e o provedor do assistente."/>
+    <form className="workspaceForm" onSubmit={submit}><section><h2>Interface</h2><label>Densidade<select value={value.density} onChange={e=>setValue({...value,density:e.target.value as AppSettings["density"]})}><option value="compact">Compacta</option><option value="comfortable">Confortável</option><option value="spacious">Ampla</option></select></label><label className="check"><input type="checkbox" checked={value.reduceMotion} onChange={e=>setValue({...value,reduceMotion:e.target.checked})}/> Reduzir animações</label></section>
+    <section><h2>Assistente IA</h2><label>Provedor<select value={value.aiProvider} onChange={e=>{const p=e.target.value as AppSettings["aiProvider"];setValue({...value,aiProvider:p,aiEndpoint:providerDefaults[p][0],aiModel:providerDefaults[p][1]})}}><option value="ollama">Ollama · local</option><option value="lmstudio">LM Studio · local</option><option value="gemini">Gemini · remoto</option></select></label><label>Endpoint<input value={value.aiEndpoint} onChange={e=>setValue({...value,aiEndpoint:e.target.value})}/></label><label>Modelo<input value={value.aiModel} onChange={e=>setValue({...value,aiModel:e.target.value})}/></label><label>Modo<select value={value.aiMode} onChange={e=>setValue({...value,aiMode:e.target.value as AppSettings["aiMode"]})}><option value="strict">Estrito · dados locais</option><option value="assisted">Assistido · inferências marcadas</option><option value="general">Geral · conhecimento do modelo</option></select></label>{value.aiProvider==="gemini"&&<p className="privacyNotice">Gemini é remoto: contexto e pergunta serão enviados ao Google. A chave permanece somente na sessão do Assistente.</p>}</section>
+    <footer><button className="primaryButton">{saved?"Salvo ✓":"Salvar configurações"}</button></footer></form><DataManagement onError={onError}/></div>
+}
+
+function DataManagement({onError}:{onError:(message:string)=>void}){
+  const [backups,setBackups]=useState<string[]>([]);const [diag,setDiag]=useState<Diagnostics>();const [status,setStatus]=useState("");
+  async function load(){try{const [items,info]=await Promise.all([listBackups(),diagnostics()]);setBackups(items);setDiag(info)}catch(c){onError(message(c))}}
+  useEffect(()=>{void load()},[]);
+  async function backup(){try{const name=await createManualBackup();setStatus(`Backup criado: ${name}`);await load()}catch(c){onError(message(c))}}
+  async function restore(name:string){if(!window.confirm(`Restaurar ${name}? Um snapshot de segurança será criado antes.`))return;try{await restoreBackup(name);setStatus("Backup restaurado com sucesso.");window.location.reload()}catch(c){onError(message(c))}}
+  async function exportData(){try{downloadFile("wavearchive-export.json",await exportArchive(),"application/json");setStatus("Arquivo portátil exportado.")}catch(c){onError(message(c))}}
+  async function importData(file?:File){if(!file)return;if(file.size>16*1024*1024){onError("Arquivo maior que 16 MiB.");return}if(!window.confirm("Importar builds, equipes e progresso deste arquivo?"))return;try{const text=await file.text();parseArchive(text);const report=await importArchive(text);setStatus(`Importados: ${report.builds} builds e ${report.teams} equipes.${report.warnings.length?` Avisos: ${report.warnings.join(" ")}`:""}`)}catch(c){onError(message(c))}}
+  return <section className="dataManagement"><header><div><span className="sectionLabel">PORTABILIDADE E RECUPERAÇÃO</span><h2>Dados e diagnóstico</h2></div><div><button onClick={()=>void exportData()}>Exportar JSON</button><label className="fileButton">Importar JSON<input type="file" accept="application/json,.json" onChange={e=>void importData(e.target.files?.[0])}/></label><button className="primaryButton" onClick={()=>void backup()}>Criar backup completo</button></div></header>{status&&<p className="successMessage">{status}</p>}<div className="diagnosticGrid"><span><small>Banco</small><b>{diag?`${(diag.databaseBytes/1024/1024).toFixed(2)} MiB`:"—"}</b></span><span><small>Migrations</small><b>{diag?.migrations??"—"}</b></span><span><small>Catálogo</small><b>{diag?.catalogCount??"—"} · {diag?.gameVersion}</b></span><span><small>Runtime</small><b>{diag?.goVersion??"—"}</b></span></div><details><summary>Backups disponíveis · {backups.length}</summary>{backups.map(name=><div className="backupRow" key={name}><code>{name}</code><button onClick={()=>void restore(name)}>Restaurar</button></div>)}</details>{diag&&<p className="diagnosticPath">{diag.databasePath}</p>}</section>
+}
+
+export function AccountPage({onError}:{onError:(m:string)=>void}){
+  const [account,setAccount]=useState<AccountSummary>();useEffect(()=>{void getAccountSummary().then(setAccount).catch(e=>onError(message(e)))},[]);
+  if(!account)return <Empty text="Carregando conta…"/>;
+  async function submit(e:FormEvent){e.preventDefault();try{setAccount(await saveAccountSummary(account!));onError("")}catch(c){onError(message(c))}}
+  return <div className="workspacePage"><Intro eyebrow="PERFIL LOCAL" title="MINHA CONTA" text="Nenhuma credencial do jogo é solicitada ou armazenada."/>
+    <div className="summaryGrid"><article><small>Personagens</small><strong>{account.ownedCharacters}</strong></article><article><small>Armas</small><strong>{account.ownedWeapons}</strong></article><article><small>Echoes</small><strong>{account.ownedEchoes}</strong></article></div>
+    <form className="workspaceForm single" onSubmit={submit}><section><label>Nome do perfil<input value={account.name} onChange={e=>setAccount({...account,name:e.target.value})}/></label><div className="formPair"><label>Astrites<input type="number" min={0} value={account.astrite} onChange={e=>setAccount({...account,astrite:Number(e.target.value)})}/></label><label>Radiant Tides<input type="number" min={0} value={account.radiantTides} onChange={e=>setAccount({...account,radiantTides:Number(e.target.value)})}/></label></div><label>Notas<textarea rows={5} value={account.notes} onChange={e=>setAccount({...account,notes:e.target.value})}/></label><button className="primaryButton">Salvar perfil</button></section></form></div>
+}
+
+function Intro({eyebrow,title,text,action}:{eyebrow:string;title:string;text:string;action?:ReactNode}){return <div className="pageIntro"><div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{text}</p></div>{action}</div>}
+function Empty({text}:{text:string}){return <div className="miniEmpty">◇ {text}</div>}
+function message(value:unknown){return value instanceof Error?value.message:String(value)}
+function downloadFile(name:string,content:string,type:string){const url=URL.createObjectURL(new Blob([content],{type}));const anchor=document.createElement("a");anchor.href=url;anchor.download=name;anchor.click();URL.revokeObjectURL(url)}

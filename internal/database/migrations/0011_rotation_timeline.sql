@@ -1,0 +1,4 @@
+ALTER TABLE buffs ADD COLUMN trigger_action TEXT NOT NULL DEFAULT '';
+ALTER TABLE rotation_actions ADD COLUMN cooldown REAL NOT NULL DEFAULT 0;
+ALTER TABLE rotation_actions ADD COLUMN energy_cost REAL NOT NULL DEFAULT 0;
+ALTER TABLE rotation_actions ADD COLUMN notes TEXT NOT NULL DEFAULT '';
