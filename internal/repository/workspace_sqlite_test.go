@@ -33,8 +33,15 @@ func TestWorkspaceSettingsGoalsAndConvenes(t *testing.T) {
 	if err != nil || record.ID == 0 {
 		t.Fatalf("record = %+v, %v", record, err)
 	}
-	summary, err := repo.Dashboard(ctx)
-	if err != nil || len(summary.Goals) != 1 {
-		t.Fatalf("summary = %+v, %v", summary, err)
+	goals, err := repo.ListGoals(ctx)
+	if err != nil || len(goals) != 1 {
+		t.Fatalf("goals = %+v, %v", goals, err)
+	}
+	convenes, err := repo.ListConvenes(ctx)
+	if err != nil || len(convenes) != 1 {
+		t.Fatalf("convenes = %+v, %v", convenes, err)
+	}
+	if _, err := repo.Dashboard(ctx); err != nil {
+		t.Fatalf("dashboard: %v", err)
 	}
 }

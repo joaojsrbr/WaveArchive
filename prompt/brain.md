@@ -180,6 +180,8 @@ resultados e usar IA contextual sem inventar dados do jogo.
   `architecture.md` e `brain.md`.
 - O `README.md` principal foi refeito para documentar somente o produto atual,
   sua estrutura, execução, validação, build, dados locais e continuidade com IA.
+- O teste do workspace deixou de acessar `DashboardSummary.Goals`, removido junto
+  com o Planejador; metas e convenes são validadas por seus repositórios próprios.
 
 ### 2026-07-28 — brain para IA
 
