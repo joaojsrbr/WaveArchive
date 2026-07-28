@@ -1,4 +1,4 @@
-/build/bin/
+/build/*
 /build/windows/installer/tmp/
 /frontend/dist/*
 !/frontend/dist/.gitkeep

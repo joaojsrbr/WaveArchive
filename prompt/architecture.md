@@ -57,7 +57,10 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
   3.3. Normaliza personagens, armas, Echoes, Sonata Effects e localização
   portuguesa para os mesmos DTOs internos usados pelo catálogo. Os arquivos
   brutos são armazenados em `sources/arikatsu/<versão>` no diretório local do
-  app. Campos detalhados ainda não presentes no adapter são enriquecidos pelo
+  app. Armas usam nativamente `weaponconf`, `weaponpropertygrowth`,
+  `propertyindex` e `weaponreson`: ATK e atributo secundário são calculados no
+  nível 90 e a história fica separada do efeito passivo. Campos detalhados ainda
+  não presentes no adapter são enriquecidos pelo
   snapshot Nanoka da mesma versão; se o detalhe não estiver disponível, a
   sincronização preserva o detalhe anterior em vez de gravar dados vazios.
 - Variantes cosméticas `MonsterInfo_35*` existem no inventário bruto Arikatsu,

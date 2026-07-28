@@ -217,6 +217,26 @@ resultados e usar IA contextual sem inventar dados do jogo.
 - IDs, conta, progressão, habilidades e builds continuam independentes por
   variante; o agrupamento existe somente na apresentação do catálogo.
 
+### 2026-07-28 — armas Arikatsu e Materiais
+
+- Armas Arikatsu agora usam os arquivos brutos oficiais para calcular ATK e
+  atributo secundário no nível 90; história, nome do efeito e passiva permanecem
+  em campos separados.
+- A aba Materiais voltou à paleta escura/ciano do produto, ganhou painéis com
+  espaçamento fluido, cards responsivos e marcadores de nível posicionados pela
+  escala real, sem rolagem horizontal.
+- Validado com Acreção Nuclear da branch 3.5: ATK 463, ATQ 18,2% e efeito
+  `Olhar Intergaláctico`.
+
+### 2026-07-28 — estabilidade da biblioteca de Equipes
+
+- A biblioteca usa gutter próprio da tela de Equipes; não depende mais da
+  variável de espaçamento exclusiva de Builds.
+- A lista de personagens ganhou rolagem vertical contida, altura estável e
+  gutter reservado para a barra, evitando saltos da página ao filtrar.
+- O filtro Favoritos preserva na lista personagens já usados na composição,
+  mantendo o card selecionado e seu estado `Na equipe`.
+
 ## Como atualizar este arquivo
 
 Ao terminar uma tarefa, altere apenas o necessário:

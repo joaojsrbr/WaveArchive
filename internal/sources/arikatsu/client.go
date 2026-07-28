@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -32,12 +33,15 @@ type Client struct {
 	http     *http.Client
 	fallback *nanoka.Client
 
-	mu         sync.Mutex
-	texts      map[string]string
-	roles      []roleInfo
-	weapons    []weaponConf
-	echoes     []phantomItem
-	echoSkills []phantomSkill
+	mu           sync.Mutex
+	texts        map[string]string
+	roles        []roleInfo
+	weapons      []weaponConf
+	weaponGrowth []weaponPropertyGrowth
+	properties   []propertyIndex
+	weaponResons []weaponReson
+	echoes       []phantomItem
+	echoSkills   []phantomSkill
 }
 
 func NewClient(version, cacheRoot string, httpClient *http.Client, fallback *nanoka.Client) (*Client, error) {
@@ -157,6 +161,18 @@ func (c *Client) WeaponIndex(ctx context.Context, version string) (map[string]dt
 	if err != nil {
 		return nil, err
 	}
+	growth, err := c.weaponPropertyGrowth(ctx)
+	if err != nil {
+		return nil, err
+	}
+	properties, err := c.propertyCatalog(ctx)
+	if err != nil {
+		return nil, err
+	}
+	propertyByID := make(map[int64]propertyIndex, len(properties))
+	for _, property := range properties {
+		propertyByID[property.ID] = property
+	}
 	result := make(map[string]dto.WeaponIndexEntry)
 	for _, weapon := range weapons {
 		if !weapon.IsShow || !weapon.ShowInBag || weapon.QualityID < 3 || weapon.QualityID > 5 {
@@ -167,9 +183,9 @@ func (c *Client) WeaponIndex(ctx context.Context, version string) (map[string]dt
 			Rank:        weapon.QualityID,
 			Type:        weapon.WeaponType,
 			Name:        localized(texts, weapon.WeaponName),
-			Description: localized(texts, weapon.Desc),
-			BaseATK:     int(weapon.FirstProp.Value),
-			SubStat:     localized(texts, weapon.AttributesDescription),
+			Description: localized(texts, weapon.AttributesDescription),
+			BaseATK:     maxWeaponATK(weapon, growth),
+			SubStat:     weaponSubStat(weapon, growth, propertyByID, texts),
 		}
 	}
 	if len(result) == 0 {
@@ -179,38 +195,43 @@ func (c *Client) WeaponIndex(ctx context.Context, version string) (map[string]dt
 }
 
 func (c *Client) Weapon(ctx context.Context, version, language string, id int64) (dto.Weapon, error) {
-	detail, fallbackErr := c.fallback.Weapon(ctx, version, language, id)
+	if err := c.checkVersion(version); err != nil {
+		return dto.Weapon{}, err
+	}
 	weapons, err := c.weaponCatalog(ctx)
 	if err != nil {
-		if fallbackErr != nil {
-			return dto.Weapon{}, err
-		}
-		return detail, nil
+		return dto.Weapon{}, err
 	}
 	texts, err := c.textMap(ctx)
 	if err != nil {
-		if fallbackErr != nil {
-			return dto.Weapon{}, err
-		}
-		return detail, nil
+		return dto.Weapon{}, err
 	}
+	resons, resonErr := c.weaponResonCatalog(ctx)
 	for _, weapon := range weapons {
 		if weapon.ItemID != id {
 			continue
 		}
-		detail.ID = weapon.ItemID
-		detail.Name = localized(texts, weapon.WeaponName)
-		detail.Description = localized(texts, weapon.Desc)
-		detail.Rarity = weapon.QualityID
-		detail.Type = weapon.WeaponType
-		detail.Icon = weapon.Icon
-		detail.Params = parameterRows(weapon.DescParams)
+		detail := dto.Weapon{
+			ID:          weapon.ItemID,
+			Name:        localized(texts, weapon.WeaponName),
+			Description: localized(texts, weapon.AttributesDescription),
+			Rarity:      weapon.QualityID,
+			Type:        weapon.WeaponType,
+			Icon:        weapon.Icon,
+			Effect:      localized(texts, weapon.Desc),
+			Params:      parameterRows(weapon.DescParams),
+		}
+		if resonErr == nil {
+			for _, reson := range resons {
+				if reson.ResonID == weapon.ResonID && reson.Level == 1 {
+					detail.EffectName = localized(texts, reson.Name)
+					break
+				}
+			}
+		}
 		return detail, nil
 	}
-	if fallbackErr != nil {
-		return dto.Weapon{}, fmt.Errorf("weapon %d not found in Arikatsu", id)
-	}
-	return detail, nil
+	return dto.Weapon{}, fmt.Errorf("weapon %d not found in Arikatsu", id)
 }
 
 func (c *Client) EchoIndex(ctx context.Context, version string) (map[string]dto.EchoIndexEntry, error) {
@@ -375,6 +396,42 @@ func (c *Client) weaponCatalog(ctx context.Context) ([]weaponConf, error) {
 	return c.weapons, nil
 }
 
+func (c *Client) weaponPropertyGrowth(ctx context.Context) ([]weaponPropertyGrowth, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.weaponGrowth != nil {
+		return c.weaponGrowth, nil
+	}
+	if err := c.readJSONUnlocked(ctx, "BinData/property/weaponpropertygrowth.json", &c.weaponGrowth); err != nil {
+		return nil, err
+	}
+	return c.weaponGrowth, nil
+}
+
+func (c *Client) propertyCatalog(ctx context.Context) ([]propertyIndex, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.properties != nil {
+		return c.properties, nil
+	}
+	if err := c.readJSONUnlocked(ctx, "BinData/property/propertyindex.json", &c.properties); err != nil {
+		return nil, err
+	}
+	return c.properties, nil
+}
+
+func (c *Client) weaponResonCatalog(ctx context.Context) ([]weaponReson, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.weaponResons != nil {
+		return c.weaponResons, nil
+	}
+	if err := c.readJSONUnlocked(ctx, "BinData/weapon/weaponreson.json", &c.weaponResons); err != nil {
+		return nil, err
+	}
+	return c.weaponResons, nil
+}
+
 func (c *Client) phantomCatalog(ctx context.Context) ([]phantomItem, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -529,6 +586,59 @@ func isCatalogEcho(item phantomItem) bool {
 	return item.PhantomType == 1 &&
 		item.MonsterID > 0 &&
 		!strings.HasPrefix(item.MonsterName, "MonsterInfo_35")
+}
+
+func maxWeaponATK(weapon weaponConf, growth []weaponPropertyGrowth) int {
+	return int(math.Round(maxWeaponProperty(weapon.FirstProp.Value, weapon.FirstCurve, growth)))
+}
+
+func weaponSubStat(
+	weapon weaponConf,
+	growth []weaponPropertyGrowth,
+	properties map[int64]propertyIndex,
+	texts map[string]string,
+) string {
+	if weapon.SecondProp.ID == 0 || weapon.SecondProp.Value == 0 {
+		return ""
+	}
+	property, ok := properties[weapon.SecondProp.ID]
+	if ok && property.ConvertToWhiteID != 0 {
+		if base, exists := properties[property.ConvertToWhiteID]; exists {
+			property = base
+		}
+	}
+	name := localized(texts, property.Name)
+	if property.Name == "" || name == property.Name {
+		name = property.Key
+	}
+	value := maxWeaponProperty(weapon.SecondProp.Value, weapon.SecondCurve, growth)
+	if weapon.SecondProp.IsRatio {
+		return strings.TrimSpace(name + " " + formatDecimal(value*100) + "%")
+	}
+	return strings.TrimSpace(name + " " + formatDecimal(value))
+}
+
+func maxWeaponProperty(base float64, curveID int, growth []weaponPropertyGrowth) float64 {
+	bestLevel := -1
+	bestBreach := -1
+	multiplier := float64(10000)
+	for _, point := range growth {
+		if point.CurveID != curveID {
+			continue
+		}
+		if point.Level > bestLevel || (point.Level == bestLevel && point.BreachLevel > bestBreach) {
+			bestLevel = point.Level
+			bestBreach = point.BreachLevel
+			multiplier = point.CurveValue
+		}
+	}
+	return base * multiplier / 10000
+}
+
+func formatDecimal(value float64) string {
+	formatted := strconv.FormatFloat(value, 'f', 1, 64)
+	formatted = strings.TrimSuffix(formatted, ".0")
+	return strings.ReplaceAll(formatted, ".", ",")
 }
 
 func parameterRows(rows []stringArray) []any {

@@ -1492,9 +1492,14 @@ tbody tr:hover {
 }
 
 .materialsPlanner {
-  padding: 0;
-  border: 0;
-  background: #090811
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  padding: clamp(18px, 2vw, 30px);
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(135deg, rgba(116, 211, 208, .035), transparent 34%),
+    var(--bg-base)
 }
 
 .materialsTitle,
@@ -1509,49 +1514,58 @@ tbody tr:hover {
 
 .materialsTitle h2,
 .skillMaterialSection h2 {
-  margin: 0 0 3px;
-  font-size: 21px
+  margin: 7px 0 4px;
+  font: 600 clamp(22px, 2vw, 30px)/1.05 var(--font-display)
 }
 
 .materialsTitle p,
 .skillMaterialSection header p {
   margin: 0;
-  color: #a88cff;
-  font: 11px Consolas, monospace
+  color: var(--cyan);
+  font: 10px var(--font-mono)
 }
 
 .calculatingBadge {
+  padding: 7px 10px;
+  border: 1px solid rgba(116, 211, 208, .25);
+  background: rgba(116, 211, 208, .05);
   color: var(--cyan);
-  font: 9px Consolas, monospace
+  font: 9px var(--font-mono)
 }
 
 .materialCards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 14px 0 28px
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 9px;
+  margin: 0
 }
 
 .materialTile {
-  width: 72px;
-  min-height: 100px;
-  padding: 7px;
-  border: 1px solid #647184;
-  border-radius: 11px;
-  background: #10121c
+  position: relative;
+  min-width: 0;
+  min-height: 146px;
+  display: grid;
+  grid-template-rows: 78px auto minmax(28px, auto);
+  align-content: start;
+  padding: 9px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-top-color: var(--rarity-color, var(--border-active));
+  border-radius: 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rarity-color, var(--cyan)) 7%, var(--surface-1)), var(--surface-1))
 }
 
 .materialTile>div {
-  height: 58px;
+  height: 78px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #161b28
+  border: 1px solid rgba(255, 255, 255, .035);
+  background: rgba(5, 9, 13, .45)
 }
 
 .materialTile img {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   object-fit: contain
 }
 
@@ -1562,92 +1576,123 @@ tbody tr:hover {
 
 .materialTile strong {
   display: block;
-  margin-top: 7px;
-  font: 700 12px Consolas, monospace
+  margin-top: 9px;
+  color: var(--text);
+  font: 700 12px var(--font-mono)
 }
 
 .materialTile small {
-  display: none
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2
 }
 
 .materialTile.rarity-5 {
-  border-color: #c89b18;
-  background: #1b1109
+  --rarity-color: #dfbd78
 }
 
 .materialTile.rarity-4 {
-  border-color: #8a70c5;
-  background: #141025
+  --rarity-color: #a993d8
 }
 
 .materialTile.rarity-3 {
-  border-color: #398fb5;
-  background: #0d1720
+  --rarity-color: #6eb5d5
 }
 
 .materialTile.rarity-2 {
-  border-color: #2da98d;
-  background: #081b18
+  --rarity-color: #62c1a8
 }
 
 .materialCardsEmpty {
-  margin: 16px 0 28px;
+  margin: 0;
   padding: 24px;
   border: 1px dashed var(--border);
-  color: var(--muted)
+  background: rgba(255, 255, 255, .012);
+  color: var(--muted);
+  text-align: center
 }
 
 .levelPlanner {
-  padding: 20px 0 24px;
-  border-top: 1px solid #827f89;
-  border-bottom: 1px solid #827f89
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-1)
 }
 
 .levelPlanner h3 {
   margin: 0;
-  font-size: 17px
+  font: 600 18px var(--font-display)
 }
 
 .levelPlanner header strong {
-  padding: 7px 10px;
-  border-radius: 9px;
-  background: #24163b;
-  color: #b690ff;
-  font: 11px Consolas, monospace
+  padding: 6px 9px;
+  border: 1px solid rgba(223, 189, 120, .28);
+  background: rgba(223, 189, 120, .06);
+  color: var(--accent-gold);
+  font: 10px var(--font-mono)
 }
 
 .levelPlanner label {
   display: grid;
   gap: 8px;
-  margin-top: 15px;
-  color: #b8a8df;
-  font: 11px Consolas, monospace
+  min-width: 0;
+  margin-top: 16px;
+  color: var(--secondary);
+  font: 9px var(--font-mono)
 }
 
 .levelPlanner input[type=range] {
+  height: 18px;
+  margin: 0;
   width: 100%;
-  accent-color: #a879ff
+  min-width: 0;
+  accent-color: var(--cyan)
 }
 
 .levelTicks {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  height: 16px;
+  margin-top: 1px;
   color: var(--muted);
-  font: 8px Consolas, monospace
+  font: 8px var(--font-mono)
+}
+
+.levelTicks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%)
+}
+
+.levelTicks span.first {
+  transform: none
+}
+
+.levelTicks span.last {
+  transform: translateX(-100%)
 }
 
 .skillMaterialSection {
-  padding-top: 24px
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-1)
 }
 
 .skillMaterialSection>header {
-  align-items: center
+  align-items: center;
+  margin-bottom: 16px
 }
 
 .skillLevelGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(300px, 1fr));
-  gap: 8px
+  gap: 8px;
+  margin-top: 16px
 }
 
 .skillLevelGrid article {
@@ -1697,13 +1742,13 @@ tbody tr:hover {
 
 .skillLevelGrid article>span {
   padding-bottom: 10px;
-  color: #a879ff
+  color: var(--cyan)
 }
 
 .materialsTotal {
-  margin-top: 18px;
-  padding-top: 15px;
-  border-top: 1px solid var(--border);
+  padding: 15px 18px;
+  border: 1px solid var(--border);
+  background: rgba(116, 211, 208, .025);
   color: var(--muted)
 }
 
@@ -2594,8 +2639,9 @@ tbody tr:hover {
 
 .weaponStats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 180px));
+  grid-template-columns: repeat(3, minmax(150px, 1fr));
   gap: 8px;
+  max-width: 760px;
   margin-top: 20px;
 }
 
@@ -2615,7 +2661,8 @@ tbody tr:hover {
 
 .weaponStats strong {
   color: var(--text);
-  font: 15px Consolas, monospace;
+  font: 15px var(--font-mono);
+  overflow-wrap: anywhere;
 }
 
 .comingSoon {
@@ -5581,6 +5628,7 @@ h1 {
 
 /* Teams v2 */
 .teamWorkspace {
+  --team-gutter: clamp(16px, 1.15vw, 22px);
   min-height: calc(100dvh - 106px);
   display: grid;
   grid-template-columns: 272px minmax(540px, 1fr) 300px;
@@ -6222,9 +6270,14 @@ h1 {
 .characterLibrary {
   grid-column: 2 / 4;
   min-width: 0;
-  display: block;
+  display: grid;
+  grid-template-rows: auto minmax(320px, 48dvh);
   border-top: 1px solid rgba(255, 255, 255, .02);
   background: #090e13;
+}
+
+.characterLibrary .libraryFilters {
+  padding: 14px var(--team-gutter);
 }
 
 /* Build composer */
@@ -7242,9 +7295,31 @@ h1 {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  align-content: start;
   gap: 10px;
-  overflow: visible;
-  padding: 14px;
+  min-height: 320px;
+  max-height: 48dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+  padding: 14px var(--team-gutter) 18px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(116, 211, 208, .42) rgba(255, 255, 255, .035);
+}
+
+.characterFilmstrip::-webkit-scrollbar {
+  width: 5px;
+}
+
+.characterFilmstrip::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, .035);
+}
+
+.characterFilmstrip::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(116, 211, 208, .42);
 }
 
 .libraryCharacter {

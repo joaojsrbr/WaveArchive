@@ -132,7 +132,7 @@ export function Materials({ profile }: { profile: CharacterProfile }) {
   if (!profile.progression?.ascensions?.length) return <DetailEmpty text="Materiais ainda não sincronizados." />;
   return <div className="materialsPlanner">
     <header className="materialsTitle">
-      <div><h2>Materiais de ascensão</h2><p>Nv.{currentLevel} → Nv.{targetLevel}</p></div>
+      <div><span className="sectionLabel">DADOS OFICIAIS · {profile.character.gameVersion}</span><h2>Materiais de ascensão</h2><p>Nv.{currentLevel} → Nv.{targetLevel}</p></div>
       {calculating && <span className="calculatingBadge">Atualizando…</span>}
     </header>
     <MaterialCards costs={plan?.ascensions || []} emptyText="Nenhum material de ascensão neste intervalo." />
@@ -141,7 +141,7 @@ export function Materials({ profile }: { profile: CharacterProfile }) {
       <header><h3>Nível</h3><strong>Nv.{currentLevel} → Nv.{targetLevel}</strong></header>
       <label><span>De {currentLevel}</span><input type="range" min={1} max={90} value={currentLevel} onChange={(event) => setCurrentLevel(Math.min(Number(event.target.value), targetLevel))} /></label>
       <label><span>Até {targetLevel}</span><input type="range" min={1} max={90} value={targetLevel} onChange={(event) => setTargetLevel(Math.max(Number(event.target.value), currentLevel))} /></label>
-      <div className="levelTicks">{[1, 20, 30, 40, 50, 60, 70, 80, 90].map((level) => <span key={level}>{level}</span>)}</div>
+      <div className="levelTicks">{[1, 20, 30, 40, 50, 60, 70, 80, 90].map((level, index, values) => <span className={index === 0 ? "first" : index === values.length - 1 ? "last" : ""} style={{ left: `${((level - 1) / 89) * 100}%` }} key={level}>{level}</span>)}</div>
     </section>
 
     <section className="skillMaterialSection">

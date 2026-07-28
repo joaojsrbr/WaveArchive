@@ -77,6 +77,11 @@ export function TeamsPage({ version, onError }: {
     [characters]
   );
 
+  const selectedCharacterIDs = useMemo(
+    () => new Set(draft.members.map((member) => member.characterId).filter(Boolean)),
+    [draft.members]
+  );
+
   const presets = useMemo<TeamPreset[]>(() => {
     const result: TeamPreset[] = [];
     for (const guide of guides) {
@@ -103,7 +108,7 @@ export function TeamsPage({ version, onError }: {
         && (!element || character.elementCode === element)
         && (!rarity || character.rarity === rarity)
         && (!ownedOnly || character.owned)
-        && (!favoritesOnly || character.favorite);
+        && (!favoritesOnly || character.favorite || selectedCharacterIDs.has(character.id));
     });
 
     return [...list].sort((left, right) => {
@@ -112,7 +117,7 @@ export function TeamsPage({ version, onError }: {
       if (sort === "level") return (right.level || 0) - (left.level || 0) || right.rarity - left.rarity;
       return left.apiOrder - right.apiOrder;
     });
-  }, [characterQuery, characters, element, rarity, ownedOnly, favoritesOnly, sort]);
+  }, [characterQuery, characters, element, rarity, ownedOnly, favoritesOnly, selectedCharacterIDs, sort]);
 
   const filteredTeams = useMemo(() => {
     const query = sourceQuery.trim().toLocaleLowerCase();

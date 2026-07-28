@@ -37,11 +37,36 @@ type weaponConf struct {
 	QualityID             int           `json:"QualityId"`
 	WeaponType            int           `json:"WeaponType"`
 	FirstProp             propertyValue `json:"FirstPropId"`
+	FirstCurve            int           `json:"FirstCurve"`
+	SecondProp            propertyValue `json:"SecondPropId"`
+	SecondCurve           int           `json:"SecondCurve"`
+	ResonID               int64         `json:"ResonId"`
 	Desc                  string        `json:"Desc"`
 	DescParams            []stringArray `json:"DescParams"`
 	AttributesDescription string        `json:"AttributesDescription"`
 	Icon                  string        `json:"Icon"`
 	ShowInBag             bool          `json:"ShowInBag"`
+}
+
+type weaponPropertyGrowth struct {
+	CurveID     int     `json:"CurveId"`
+	Level       int     `json:"Level"`
+	BreachLevel int     `json:"BreachLevel"`
+	CurveValue  float64 `json:"CurveValue"`
+}
+
+type propertyIndex struct {
+	ID               int64  `json:"Id"`
+	Key              string `json:"Key"`
+	Name             string `json:"Name"`
+	AnotherName      string `json:"AnotherName"`
+	ConvertToWhiteID int64  `json:"ConvertToWhiteId"`
+}
+
+type weaponReson struct {
+	ResonID int64  `json:"ResonId"`
+	Level   int    `json:"Level"`
+	Name    string `json:"Name"`
 }
 
 type phantomItem struct {
