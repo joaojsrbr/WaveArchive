@@ -32,7 +32,7 @@ export type CharacterFilter = {
   rarity: number;
   ownedOnly: boolean;
   favorites: boolean;
-  sort: "name" | "api" | "rarity" | "element" | "id";
+  sort: 'name' | 'api' | 'rarity' | 'element' | 'id';
 };
 
 export type CatalogStatus = {
@@ -65,38 +65,96 @@ export type ResonanceChain = {
 };
 
 export type Material = {
-  id: number; name: string; rarity: number; type: number; description: string;
-  iconPath: string; sources: string[]; gameVersion: string;
+  id: number;
+  name: string;
+  rarity: number;
+  type: number;
+  description: string;
+  iconPath: string;
+  sources: string[];
+  gameVersion: string;
 };
 export type MaterialCost = { material: Material; quantity: number };
 export type AscensionStage = { stage: number; unlockLevel: number; costs: MaterialCost[] };
 export type SkillValueRow = { name: string; values: string[] };
 export type SkillLevelCost = { level: number; costs: MaterialCost[] };
 export type SkillProgression = {
-  nodeId: string; nodeType: number; type: string; name: string; iconPath: string;
-  maxLevel: number; unlockCosts: MaterialCost[]; levelCosts: SkillLevelCost[]; values: SkillValueRow[];
+  nodeId: string;
+  nodeType: number;
+  type: string;
+  name: string;
+  iconPath: string;
+  maxLevel: number;
+  unlockCosts: MaterialCost[];
+  levelCosts: SkillLevelCost[];
+  values: SkillValueRow[];
 };
-export type CharacterStat = { ascension: number; level: number; hp: number; atk: number; def: number };
+export type CharacterStat = {
+  ascension: number;
+  level: number;
+  hp: number;
+  atk: number;
+  def: number;
+};
 export type CharacterProgression = {
-  ascensions: AscensionStage[]; skills: SkillProgression[]; levelExp: number[]; stats: CharacterStat[];
+  ascensions: AscensionStage[];
+  skills: SkillProgression[];
+  levelExp: number[];
+  stats: CharacterStat[];
 };
-export type CharacterTag = { id: number; name: string; description: string; iconPath: string; color: string };
+export type CharacterTag = {
+  id: number;
+  name: string;
+  description: string;
+  iconPath: string;
+  color: string;
+};
 export type LoreEntry = { title: string; content: string; iconPath: string };
 export type ForteAction = { name: string; description: string; inputs: string[]; images: string[] };
-export type ForteGuide = { iconPath: string; descriptions: string[]; features: string[]; actions: ForteAction[] };
-export type WeaknessStats = { buildUp: number; buildUpMax: number; totalBonus: number; breakRatio: number; mastery: number };
+export type ForteGuide = {
+  iconPath: string;
+  descriptions: string[];
+  features: string[];
+  actions: ForteAction[];
+};
+export type WeaknessStats = {
+  buildUp: number;
+  buildUpMax: number;
+  totalBonus: number;
+  breakRatio: number;
+  mastery: number;
+};
 export type SkillBranch = { id: number; name: string; description: string; iconPath: string };
-export type SkillTreeNodeInfo = { nodeId: string; nodeType: number; coordinate: number; parentNodes: number[]; branchIds: number[]; unlockCondition: number };
+export type SkillTreeNodeInfo = {
+  nodeId: string;
+  nodeType: number;
+  coordinate: number;
+  parentNodes: number[];
+  branchIds: number[];
+  unlockCondition: number;
+};
 export type CharacterExtras = {
-  tags: CharacterTag[]; stories: LoreEntry[]; goods: LoreEntry[]; forte: ForteGuide;
-  weakness: WeaknessStats; skillBranches: SkillBranch[]; skillTree: SkillTreeNodeInfo[];
+  tags: CharacterTag[];
+  stories: LoreEntry[];
+  goods: LoreEntry[];
+  forte: ForteGuide;
+  weakness: WeaknessStats;
+  skillBranches: SkillBranch[];
+  skillTree: SkillTreeNodeInfo[];
 };
 export type ProgressionPlanRequest = {
-  characterId: number; currentLevel: number; targetLevel: number;
-  currentSkills: Record<string, number>; targetSkills: Record<string, number>; includeUnlocks: boolean;
+  characterId: number;
+  currentLevel: number;
+  targetLevel: number;
+  currentSkills: Record<string, number>;
+  targetSkills: Record<string, number>;
+  includeUnlocks: boolean;
 };
 export type ProgressionPlan = {
-  characterId: number; ascensions: MaterialCost[]; skills: MaterialCost[]; total: MaterialCost[];
+  characterId: number;
+  ascensions: MaterialCost[];
+  skills: MaterialCost[];
+  total: MaterialCost[];
 };
 
 export type Weapon = {
@@ -125,7 +183,7 @@ export type WeaponFilter = {
   rarity: number;
   ownedOnly: boolean;
   favorites: boolean;
-  sort: "name" | "rarity" | "type" | "atk" | "id";
+  sort: 'name' | 'rarity' | 'type' | 'atk' | 'id';
 };
 
 export type WeaponAccountUpdate = {
@@ -192,7 +250,7 @@ export type EchoFilter = {
   cost: number;
   sonataId: number;
   ownedOnly: boolean;
-  sort: "name" | "cost" | "id";
+  sort: 'name' | 'cost' | 'id';
 };
 
 export type OwnedEcho = {
@@ -258,7 +316,7 @@ export type DamageInput = {
 };
 
 export type Insight = {
-  severity: "info" | "tip" | "warning";
+  severity: 'info' | 'tip' | 'warning';
   title: string;
   message: string;
 };
@@ -299,7 +357,7 @@ export type AIAnalysisResult = {
 
 export type BuildConfig = {
   buildId: number;
-  scalingType: "ATK" | "HP" | "DEF";
+  scalingType: 'ATK' | 'HP' | 'DEF';
   baseAtk: number;
   baseHp: number;
   baseDef: number;
@@ -314,73 +372,261 @@ export type BuildConfig = {
 };
 
 export type BuildStats = {
-  baseAtk: number; weaponAtk: number; atkPercent: number; flatAtk: number; totalAtk: number;
-  baseHp: number; hpPercent: number; flatHp: number; totalHp: number;
-  baseDef: number; defPercent: number; flatDef: number; totalDef: number;
-  critRate: number; critDamage: number; energyRegen: number;
-  damageBonuses: Record<string, number>; unparsedStats: string[]; scalingStat: number;
+  baseAtk: number;
+  weaponAtk: number;
+  atkPercent: number;
+  flatAtk: number;
+  totalAtk: number;
+  baseHp: number;
+  hpPercent: number;
+  flatHp: number;
+  totalHp: number;
+  baseDef: number;
+  defPercent: number;
+  flatDef: number;
+  totalDef: number;
+  critRate: number;
+  critDamage: number;
+  energyRegen: number;
+  damageBonuses: Record<string, number>;
+  unparsedStats: string[];
+  scalingStat: number;
 };
 
-export type BuildEvaluation = { build: Build; config: BuildConfig; stats: BuildStats; damage: DamageResult };
+export type BuildEvaluation = {
+  build: Build;
+  config: BuildConfig;
+  stats: BuildStats;
+  damage: DamageResult;
+};
 
 export type Buff = {
-  id: number; teamId: number; sourceSlot: number; targetSlot: number; name: string;
-  group: string; value: number; scope: string; condition: string; active: boolean; duration: number;triggerAction:string;
+  id: number;
+  teamId: number;
+  sourceSlot: number;
+  targetSlot: number;
+  name: string;
+  group: string;
+  value: number;
+  scope: string;
+  condition: string;
+  active: boolean;
+  duration: number;
+  triggerAction: string;
 };
 
 export type RotationAction = {
-  id: number; order: number; slot: number; actionType: string; name: string;
-  motionValue: number; castTime: number; energy: number; concerto: number;cooldown:number;energyCost:number;notes:string;
+  id: number;
+  order: number;
+  slot: number;
+  actionType: string;
+  name: string;
+  motionValue: number;
+  castTime: number;
+  energy: number;
+  concerto: number;
+  cooldown: number;
+  energyCost: number;
+  notes: string;
 };
 
 export type Rotation = {
-  id: number; teamId: number; name: string; duration: number; notes: string; actions: RotationAction[];
+  id: number;
+  teamId: number;
+  name: string;
+  duration: number;
+  notes: string;
+  actions: RotationAction[];
 };
 
 export type RotationResult = {
-  rotation: Rotation; actions: { action: RotationAction; damage: number;startTime:number;endTime:number;activeBuffs:string[];expiredBuffs:string[] }[];
-  totalDamage: number; duration: number; dps: number;
-  energyBySlot: Record<number, number>; concertoBySlot: Record<number, number>;fieldTimeBySlot:Record<number,number>; warnings: string[];errors:string[];
+  rotation: Rotation;
+  actions: {
+    action: RotationAction;
+    damage: number;
+    startTime: number;
+    endTime: number;
+    activeBuffs: string[];
+    expiredBuffs: string[];
+  }[];
+  totalDamage: number;
+  duration: number;
+  dps: number;
+  energyBySlot: Record<number, number>;
+  concertoBySlot: Record<number, number>;
+  fieldTimeBySlot: Record<number, number>;
+  warnings: string[];
+  errors: string[];
 };
 
-export type TeamTheorycraft = { team: Team; buffs: Buff[]; rotations: Rotation[]; warnings: string[] };
+export type TeamTheorycraft = {
+  team: Team;
+  buffs: Buff[];
+  rotations: Rotation[];
+  warnings: string[];
+};
 
 export type AIMessage = {
-  id: number; conversationId: number; role: "user" | "assistant"; content: string; createdAt: string;
+  id: number;
+  conversationId: number;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
 };
 
 export type AIConversation = {
-  id: number; title: string; contextType: string; contextId?: number;
-  provider: string; model: string; createdAt: string; updatedAt: string; messages: AIMessage[];sources:KnowledgeSource[];
+  id: number;
+  title: string;
+  contextType: string;
+  contextId?: number;
+  provider: string;
+  model: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: AIMessage[];
+  sources: KnowledgeSource[];
 };
 
 export type AssistantRequest = {
-  conversationId: number; contextType: string; contextId?: number;
-  question: string; endpoint: string; model: string; provider: string; apiKey: string; mode: string;
+  conversationId: number;
+  contextType: string;
+  contextId?: number;
+  question: string;
+  endpoint: string;
+  model: string;
+  provider: string;
+  apiKey: string;
+  mode: string;
 };
-export type AIProviderStatus={provider:string;online:boolean;models:string[];message:string};
-export type CharacterGuide={id:string;characterId:number;name:string;source:string;likeCount:number;language:string;teams:number[][];dataJson:string;syncedAt:string};
-export type KnowledgeSource={entityType:string;entityId:string;title:string;snippet:string};
+export type AIProviderStatus = {
+  provider: string;
+  online: boolean;
+  models: string[];
+  message: string;
+};
+export type CharacterGuide = {
+  id: string;
+  characterId: number;
+  name: string;
+  source: string;
+  likeCount: number;
+  language: string;
+  teams: number[][];
+  dataJson: string;
+  syncedAt: string;
+};
+export type KnowledgeSource = {
+  entityType: string;
+  entityId: string;
+  title: string;
+  snippet: string;
+};
 
 export type AppSettings = {
-  density: "compact" | "comfortable" | "spacious"; sidebarCollapsed: boolean;
-  dataSource: "nanoka" | "arikatsu"; dataChannel: "live" | "latest" | string; dataVersion: string;
-  aiProvider: "ollama" | "lmstudio" | "gemini"; aiEndpoint: string; aiModel: string;
-  aiMode: "strict" | "assisted" | "general"; reduceMotion: boolean;
+  density: 'compact' | 'comfortable' | 'spacious';
+  sidebarCollapsed: boolean;
+  dataSource: 'nanoka' | 'arikatsu';
+  dataChannel: 'live' | 'latest' | string;
+  dataVersion: string;
+  aiProvider: 'ollama' | 'lmstudio' | 'gemini';
+  aiEndpoint: string;
+  aiModel: string;
+  aiMode: 'strict' | 'assisted' | 'general';
+  reduceMotion: boolean;
 };
 export type DataSourceOption = {
-  id:string;provider:"nanoka"|"arikatsu";channel:string;version:string;label:string;
-  description:string;syncReady:boolean;preRelease:boolean;
+  id: string;
+  provider: 'nanoka' | 'arikatsu';
+  channel: string;
+  version: string;
+  label: string;
+  description: string;
+  syncReady: boolean;
+  preRelease: boolean;
 };
-export type AccountSummary = { id:number;name:string;notes:string;astrite:number;radiantTides:number;ownedCharacters:number;ownedWeapons:number;ownedEchoes:number };
-export type PlannerGoal = { id:number;title:string;goalType:string;targetName:string;requiredAmount:number;ownedAmount:number;shellCredits:number;priority:number;dueDate:string;completed:boolean;notes:string;createdAt:string;updatedAt:string };
-export type ConveneRecord = { id:number;banner:string;bannerType:string;itemName:string;rarity:number;pullNumber:number;guaranteed:boolean;obtainedAt:string;notes:string };
-export type Enemy = { id:number;name:string;level:number;resistance:number;damageReduction:number;elementReduction:number;notes:string };
-export type FormulaVersion = { id:number;name:string;gameVersion:string;defenseConstant:number;levelFactor:number;confidence:string;references:string;roundingPolicy:string;active:boolean };
-export type BuildVersion = { id:number;buildId:number;snapshot:string;createdAt:string };
-export type DashboardSummary = { characters:number;weapons:number;echoes:number;builds:number;teams:number;recentBuilds:Build[] };
-export type ArchiveReport={builds:number;teams:number;buffs:number;rotations:number;goals:number;convenes:number;warnings:string[]};
-export type Diagnostics={dataDirectory:string;databasePath:string;databaseBytes:number;migrations:number;gameVersion:string;catalogCount:number;goVersion:string};
+export type AccountSummary = {
+  id: number;
+  name: string;
+  notes: string;
+  astrite: number;
+  radiantTides: number;
+  ownedCharacters: number;
+  ownedWeapons: number;
+  ownedEchoes: number;
+};
+export type PlannerGoal = {
+  id: number;
+  title: string;
+  goalType: string;
+  targetName: string;
+  requiredAmount: number;
+  ownedAmount: number;
+  shellCredits: number;
+  priority: number;
+  dueDate: string;
+  completed: boolean;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+export type ConveneRecord = {
+  id: number;
+  banner: string;
+  bannerType: string;
+  itemName: string;
+  rarity: number;
+  pullNumber: number;
+  guaranteed: boolean;
+  obtainedAt: string;
+  notes: string;
+};
+export type Enemy = {
+  id: number;
+  name: string;
+  level: number;
+  resistance: number;
+  damageReduction: number;
+  elementReduction: number;
+  notes: string;
+};
+export type FormulaVersion = {
+  id: number;
+  name: string;
+  gameVersion: string;
+  defenseConstant: number;
+  levelFactor: number;
+  confidence: string;
+  references: string;
+  roundingPolicy: string;
+  active: boolean;
+};
+export type BuildVersion = { id: number; buildId: number; snapshot: string; createdAt: string };
+export type DashboardSummary = {
+  characters: number;
+  weapons: number;
+  echoes: number;
+  builds: number;
+  teams: number;
+  recentBuilds: Build[];
+};
+export type ArchiveReport = {
+  builds: number;
+  teams: number;
+  buffs: number;
+  rotations: number;
+  goals: number;
+  convenes: number;
+  warnings: string[];
+};
+export type Diagnostics = {
+  dataDirectory: string;
+  databasePath: string;
+  databaseBytes: number;
+  migrations: number;
+  gameVersion: string;
+  catalogCount: number;
+  goVersion: string;
+};
 
 export type CharacterProfile = {
   character: Character;
@@ -435,19 +681,26 @@ export type BackendAPI = {
   DeleteBuff(id: number): Promise<void>;
   ListAIConversations(): Promise<AIConversation[]>;
   AssistantChat(request: AssistantRequest): Promise<AIConversation>;
-  AssistantChatStream(request:AssistantRequest):Promise<AIConversation>;
+  AssistantChatStream(request: AssistantRequest): Promise<AIConversation>;
   DeleteAIConversation(id: number): Promise<void>;
-  TestAIProvider(request:AIAnalysisRequest):Promise<AIProviderStatus>;
-  ListCharacterGuides(characterId:number):Promise<CharacterGuide[]>;
-  ListAllCharacterGuides():Promise<CharacterGuide[]>;
-  SyncCharacterGuides(characterId:number,language:string):Promise<CharacterGuide[]>;
-  SearchLocalKnowledge(query:string,limit:number):Promise<KnowledgeSource[]>;
-  ListBuildVersions(id:number):Promise<BuildVersion[]>;
-  GetSettings():Promise<AppSettings>; SaveSettings(settings:AppSettings):Promise<AppSettings>;
-  ListDataSourceOptions():Promise<DataSourceOption[]>;
-  GetAccountSummary():Promise<AccountSummary>; SaveAccountSummary(account:AccountSummary):Promise<AccountSummary>;
-  ListEnemies():Promise<Enemy[]>; ListFormulaVersions():Promise<FormulaVersion[]>; DashboardSummary():Promise<DashboardSummary>;
-  ExportArchive():Promise<string>;ImportArchive(payload:string):Promise<ArchiveReport>;
-  CreateManualBackup():Promise<string>;ListBackups():Promise<string[]>;RestoreBackup(name:string):Promise<string>;
-  Diagnostics():Promise<Diagnostics>;
+  TestAIProvider(request: AIAnalysisRequest): Promise<AIProviderStatus>;
+  ListCharacterGuides(characterId: number): Promise<CharacterGuide[]>;
+  ListAllCharacterGuides(): Promise<CharacterGuide[]>;
+  SyncCharacterGuides(characterId: number, language: string): Promise<CharacterGuide[]>;
+  SearchLocalKnowledge(query: string, limit: number): Promise<KnowledgeSource[]>;
+  ListBuildVersions(id: number): Promise<BuildVersion[]>;
+  GetSettings(): Promise<AppSettings>;
+  SaveSettings(settings: AppSettings): Promise<AppSettings>;
+  ListDataSourceOptions(): Promise<DataSourceOption[]>;
+  GetAccountSummary(): Promise<AccountSummary>;
+  SaveAccountSummary(account: AccountSummary): Promise<AccountSummary>;
+  ListEnemies(): Promise<Enemy[]>;
+  ListFormulaVersions(): Promise<FormulaVersion[]>;
+  DashboardSummary(): Promise<DashboardSummary>;
+  ExportArchive(): Promise<string>;
+  ImportArchive(payload: string): Promise<ArchiveReport>;
+  CreateManualBackup(): Promise<string>;
+  ListBackups(): Promise<string[]>;
+  RestoreBackup(name: string): Promise<string>;
+  Diagnostics(): Promise<Diagnostics>;
 };

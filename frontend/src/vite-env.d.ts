@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { BackendAPI } from "./types";
+import type { BackendAPI } from './types';
 
 declare global {
   interface Window {
