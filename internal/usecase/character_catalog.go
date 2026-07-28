@@ -12,20 +12,21 @@ import (
 
 	"wavearchive/internal/assets"
 	"wavearchive/internal/domain"
-	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/sources/nanoka/mapper"
 )
 
 type CharacterCatalog struct {
 	repository domain.CharacterRepository
-	source     *nanoka.Client
+	source     CatalogSource
 	assets     *assets.Cache
 	logger     *slog.Logger
 }
 
-func NewCharacterCatalog(repository domain.CharacterRepository, source *nanoka.Client, assetCache *assets.Cache, logger *slog.Logger) *CharacterCatalog {
+func NewCharacterCatalog(repository domain.CharacterRepository, source CatalogSource, assetCache *assets.Cache, logger *slog.Logger) *CharacterCatalog {
 	return &CharacterCatalog{repository: repository, source: source, assets: assetCache, logger: logger}
 }
+
+func (c *CharacterCatalog) SetSource(source CatalogSource) { c.source = source }
 
 func (c *CharacterCatalog) List(ctx context.Context, filter domain.CharacterFilter) ([]domain.Character, error) {
 	return c.repository.List(ctx, filter)
@@ -144,6 +145,18 @@ func (c *CharacterCatalog) Sync(ctx context.Context, progress func(string, int))
 		return domain.SyncResult{}, fmt.Errorf("detect game version: %w", err)
 	}
 
+	return c.syncVersion(ctx, version, progress)
+}
+
+func (c *CharacterCatalog) SyncVersion(ctx context.Context, version string, progress func(string, int)) (domain.SyncResult, error) {
+	if version == "" {
+		return domain.SyncResult{}, errors.New("data version is required")
+	}
+	progress("detecting", 10)
+	return c.syncVersion(ctx, version, progress)
+}
+
+func (c *CharacterCatalog) syncVersion(ctx context.Context, version string, progress func(string, int)) (domain.SyncResult, error) {
 	progress("downloading", 35)
 	index, err := c.source.CharacterIndex(ctx, version)
 	if err != nil {

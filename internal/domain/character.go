@@ -43,6 +43,7 @@ type Character struct {
 	WeaponTypeName string  `json:"weaponType"`
 	IconPath       string  `json:"iconPath"`
 	BackgroundPath string  `json:"backgroundPath"`
+	Gender         string  `json:"gender"`
 	Owned          bool    `json:"owned"`
 	Level          int     `json:"level"`
 	Sequence       int     `json:"sequence"`

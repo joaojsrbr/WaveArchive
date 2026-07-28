@@ -58,3 +58,44 @@ func TestEchoCatalogInventoryAndFilters(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestEchoSyncPrunesOnlyUnreferencedCatalogRows(t *testing.T) {
+	ctx := context.Background()
+	db, err := database.Open(filepath.Join(t.TempDir(), "echo-prune.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	repo := repository.NewEchoSQLite(db.SQL())
+	if err := repo.ReplaceSynced(ctx, "3.5", []domain.Echo{
+		{ID: 101, Name: "Active", Cost: 1},
+		{ID: 102, Name: "Owned stale", Cost: 1},
+		{ID: 103, Name: "Unreferenced stale", Cost: 1},
+	}, []domain.Sonata{{ID: 7, Name: "Active set"}, {ID: 8, Name: "Stale set"}}); err != nil {
+		t.Fatal(err)
+	}
+	sonataID := int64(7)
+	if _, err := repo.SaveOwned(ctx, domain.OwnedEcho{
+		EchoID: 102, MainStat: "ATK%", SubstatsJSON: "[]", Level: 25, SonataID: &sonataID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.ReplaceSynced(ctx, "3.5", []domain.Echo{
+		{ID: 101, Name: "Active", Cost: 1},
+	}, []domain.Sonata{{ID: 7, Name: "Active set"}}); err != nil {
+		t.Fatal(err)
+	}
+	var echoCount, staleCount, sonataCount int
+	if err := db.SQL().QueryRowContext(ctx, "SELECT COUNT(*) FROM echoes").Scan(&echoCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SQL().QueryRowContext(ctx, "SELECT COUNT(*) FROM echoes WHERE id=103").Scan(&staleCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SQL().QueryRowContext(ctx, "SELECT COUNT(*) FROM echo_sets").Scan(&sonataCount); err != nil {
+		t.Fatal(err)
+	}
+	if echoCount != 2 || staleCount != 0 || sonataCount != 1 {
+		t.Fatalf("counts = echoes %d, unreferenced stale %d, sonatas %d", echoCount, staleCount, sonataCount)
+	}
+}

@@ -11,20 +11,21 @@ import (
 
 	"wavearchive/internal/assets"
 	"wavearchive/internal/domain"
-	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/sources/nanoka/mapper"
 )
 
 type EchoCatalog struct {
 	repository domain.EchoRepository
-	source     *nanoka.Client
+	source     CatalogSource
 	assets     *assets.Cache
 	logger     *slog.Logger
 }
 
-func NewEchoCatalog(repository domain.EchoRepository, source *nanoka.Client, assetCache *assets.Cache, logger *slog.Logger) *EchoCatalog {
+func NewEchoCatalog(repository domain.EchoRepository, source CatalogSource, assetCache *assets.Cache, logger *slog.Logger) *EchoCatalog {
 	return &EchoCatalog{repository: repository, source: source, assets: assetCache, logger: logger}
 }
+
+func (c *EchoCatalog) SetSource(source CatalogSource) { c.source = source }
 
 func (c *EchoCatalog) List(ctx context.Context, filter domain.EchoFilter) ([]domain.Echo, error) {
 	return c.repository.List(ctx, filter)

@@ -21,9 +21,17 @@ func TestWorkspaceSettingsGoalsAndConvenes(t *testing.T) {
 	if err != nil || settings.AIProvider != "ollama" {
 		t.Fatalf("settings = %+v, %v", settings, err)
 	}
+	if settings.DataSource != "nanoka" || settings.DataChannel != "live" || settings.DataVersion != "3.5" {
+		t.Fatalf("unexpected default data source: %+v", settings)
+	}
 	settings.AIProvider, settings.AIEndpoint, settings.AIModel = "lmstudio", "http://127.0.0.1:1234", "test"
+	settings.DataChannel, settings.DataVersion = "latest", "3.6.1"
 	if _, err := repo.SaveSettings(ctx, settings); err != nil {
 		t.Fatal(err)
+	}
+	saved, err := repo.GetSettings(ctx)
+	if err != nil || saved.DataVersion != "3.6.1" || saved.DataChannel != "latest" {
+		t.Fatalf("saved data source = %+v, %v", saved, err)
 	}
 	goal, err := repo.SaveGoal(ctx, domain.PlannerGoal{Title: "Elevar personagem", GoalType: "character", RequiredAmount: 10, OwnedAmount: 4, Priority: 1})
 	if err != nil || goal.ID == 0 {

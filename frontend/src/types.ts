@@ -9,6 +9,7 @@ export type Character = {
   weaponType: string;
   iconPath: string;
   backgroundPath: string;
+  gender?: string;
   owned: boolean;
   level: number;
   sequence: number;
@@ -363,8 +364,13 @@ export type KnowledgeSource={entityType:string;entityId:string;title:string;snip
 
 export type AppSettings = {
   density: "compact" | "comfortable" | "spacious"; sidebarCollapsed: boolean;
+  dataSource: "nanoka" | "arikatsu"; dataChannel: "live" | "latest" | string; dataVersion: string;
   aiProvider: "ollama" | "lmstudio" | "gemini"; aiEndpoint: string; aiModel: string;
   aiMode: "strict" | "assisted" | "general"; reduceMotion: boolean;
+};
+export type DataSourceOption = {
+  id:string;provider:"nanoka"|"arikatsu";channel:string;version:string;label:string;
+  description:string;syncReady:boolean;preRelease:boolean;
 };
 export type AccountSummary = { id:number;name:string;notes:string;astrite:number;radiantTides:number;ownedCharacters:number;ownedWeapons:number;ownedEchoes:number };
 export type PlannerGoal = { id:number;title:string;goalType:string;targetName:string;requiredAmount:number;ownedAmount:number;shellCredits:number;priority:number;dueDate:string;completed:boolean;notes:string;createdAt:string;updatedAt:string };
@@ -438,6 +444,7 @@ export type BackendAPI = {
   SearchLocalKnowledge(query:string,limit:number):Promise<KnowledgeSource[]>;
   ListBuildVersions(id:number):Promise<BuildVersion[]>;
   GetSettings():Promise<AppSettings>; SaveSettings(settings:AppSettings):Promise<AppSettings>;
+  ListDataSourceOptions():Promise<DataSourceOption[]>;
   GetAccountSummary():Promise<AccountSummary>; SaveAccountSummary(account:AccountSummary):Promise<AccountSummary>;
   ListEnemies():Promise<Enemy[]>; ListFormulaVersions():Promise<FormulaVersion[]>; DashboardSummary():Promise<DashboardSummary>;
   ExportArchive():Promise<string>;ImportArchive(payload:string):Promise<ArchiveReport>;

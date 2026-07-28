@@ -192,6 +192,31 @@ resultados e usar IA contextual sem inventar dados do jogo.
 - Definido o protocolo de leitura e atualização obrigatória para futuras IAs.
 - Registrada a arquitetura atual, decisões duráveis, riscos e próximos trabalhos.
 
+### 2026-07-28 — seleção de fonte e versão
+
+- Configurações persistem provedor, canal e versão do catálogo.
+- Nanoka usa Live 3.5 por padrão; Latest 3.6.1 é identificado como preload e
+  sincroniza exatamente o snapshot escolhido, sem autodetecção silenciosa.
+- Arikatsu Data oferece as branches 3.5, 3.4 e 3.3 (última e duas anteriores).
+- O adapter Arikatsu normaliza personagens, armas, Echoes e Sonata Effects a
+  partir dos JSONs brutos, usa a localização portuguesa e mantém cache por
+  versão. Caminhos Unreal são resolvidos pelo cache de assets já existente.
+- Detalhes que ainda dependem do esquema normalizado (progressão, materiais e
+  parte dos metadados) usam o snapshot Nanoka da mesma versão como camada de
+  compatibilidade; falhas preservam o detalhe anterior, sem inventar conteúdo.
+- Validado com a branch pública 3.5: 60 personagens, 110 armas e 180 Echoes do
+  Data Bank. Os 39 registros `MonsterInfo_35*` restantes são variantes
+  cosméticas “Fantasma” e ficam fora do catálogo principal.
+- `EchoSQLite.ReplaceSynced` agora remove registros obsoletos sem referência e
+  preserva qualquer Echo presente no inventário do usuário.
+
+### 2026-07-28 — agrupamento do Rover
+
+- O catálogo apresenta as oito variantes oficiais do Rover em um único card.
+- Ao abrir o grupo, o usuário escolhe feminino ou masculino e depois o elemento.
+- IDs, conta, progressão, habilidades e builds continuam independentes por
+  variante; o agrupamento existe somente na apresentação do catálogo.
+
 ## Como atualizar este arquivo
 
 Ao terminar uma tarefa, altere apenas o necessário:

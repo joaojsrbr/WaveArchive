@@ -29,7 +29,10 @@ func (r *WorkspaceSQLite) GetSettings(ctx context.Context) (domain.AppSettings, 
 	}
 	return domain.AppSettings{
 		Density: values["density"], SidebarCollapsed: values["sidebar_collapsed"] == "true",
-		AIProvider: values["ai_provider"], AIEndpoint: values["ai_endpoint"], AIModel: values["ai_model"],
+		DataSource:  settingDefault(values, "data_source", "nanoka"),
+		DataChannel: settingDefault(values, "data_channel", "live"),
+		DataVersion: settingDefault(values, "data_version", "3.5"),
+		AIProvider:  values["ai_provider"], AIEndpoint: values["ai_endpoint"], AIModel: values["ai_model"],
 		AIMode: values["ai_mode"], ReduceMotion: values["reduce_motion"] == "true",
 	}, rows.Err()
 }
@@ -42,6 +45,7 @@ func (r *WorkspaceSQLite) SaveSettings(ctx context.Context, s domain.AppSettings
 	defer tx.Rollback()
 	values := map[string]string{
 		"density": s.Density, "sidebar_collapsed": boolText(s.SidebarCollapsed), "ai_provider": s.AIProvider,
+		"data_source": s.DataSource, "data_channel": s.DataChannel, "data_version": s.DataVersion,
 		"ai_endpoint": s.AIEndpoint, "ai_model": s.AIModel, "ai_mode": s.AIMode, "reduce_motion": boolText(s.ReduceMotion),
 	}
 	for key, value := range values {
@@ -54,6 +58,13 @@ func (r *WorkspaceSQLite) SaveSettings(ctx context.Context, s domain.AppSettings
 		return s, err
 	}
 	return r.GetSettings(ctx)
+}
+
+func settingDefault(values map[string]string, key, fallback string) string {
+	if value := strings.TrimSpace(values[key]); value != "" {
+		return value
+	}
+	return fallback
 }
 
 func (r *WorkspaceSQLite) GetAccount(ctx context.Context) (domain.AccountSummary, error) {

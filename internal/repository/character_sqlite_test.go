@@ -22,6 +22,7 @@ func TestCharacterCatalogPersistsAndSearchesWithFTS(t *testing.T) {
 		{
 			Character:       domain.Character{ID: 101, Name: "Cantarella", Nickname: "Bane", Rarity: 5, Element: domain.ElementHavoc, APIOrder: 2},
 			Description:     "A mysterious resonator.",
+			Gender:          "Female",
 			DetailLoaded:    true,
 			Skills:          []domain.Skill{{NodeID: "1", Type: "Normal Attack", Name: "Basic Attack", Description: "Deals damage."}},
 			Chains:          []domain.ResonanceChain{{Sequence: 1, Name: "First Chain", Description: "Improves the kit."}},
@@ -46,6 +47,9 @@ func TestCharacterCatalogPersistsAndSearchesWithFTS(t *testing.T) {
 	}
 	if len(got) != 1 || got[0].Name != "Cantarella" {
 		t.Fatalf("unexpected search result: %#v", got)
+	}
+	if got[0].Gender != "Female" {
+		t.Fatalf("character gender was not listed: %#v", got[0])
 	}
 	apiOrder, err := repo.List(context.Background(), domain.CharacterFilter{Sort: "api"})
 	if err != nil {

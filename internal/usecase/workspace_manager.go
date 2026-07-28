@@ -17,6 +17,12 @@ func (m *WorkspaceManager) Settings(ctx context.Context) (domain.AppSettings, er
 	return m.repository.GetSettings(ctx)
 }
 func (m *WorkspaceManager) SaveSettings(ctx context.Context, s domain.AppSettings) (domain.AppSettings, error) {
+	if s.DataSource == "" {
+		s.DataSource = "nanoka"
+	}
+	if s.DataVersion == "" {
+		s.DataVersion = "3.5"
+	}
 	validDensity := map[string]bool{"compact": true, "comfortable": true, "spacious": true}
 	validProvider := map[string]bool{"ollama": true, "lmstudio": true, "gemini": true}
 	validMode := map[string]bool{"strict": true, "assisted": true, "general": true}
@@ -29,6 +35,21 @@ func (m *WorkspaceManager) SaveSettings(ctx context.Context, s domain.AppSetting
 	if !validMode[s.AIMode] {
 		return s, errors.New("invalid AI mode")
 	}
+	validSource := map[string]map[string]bool{
+		"nanoka":   {"3.6.1": true, "3.5": true},
+		"arikatsu": {"3.5": true, "3.4": true, "3.3": true},
+	}
+	if !validSource[s.DataSource][s.DataVersion] {
+		return s, errors.New("invalid data source or version")
+	}
+	expectedChannel := s.DataVersion
+	if s.DataSource == "nanoka" {
+		expectedChannel = "live"
+		if s.DataVersion == "3.6.1" {
+			expectedChannel = "latest"
+		}
+	}
+	s.DataChannel = expectedChannel
 	s.AIEndpoint = strings.TrimSpace(s.AIEndpoint)
 	s.AIModel = strings.TrimSpace(s.AIModel)
 	return m.repository.SaveSettings(ctx, s)

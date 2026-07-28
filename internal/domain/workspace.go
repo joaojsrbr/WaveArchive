@@ -5,11 +5,25 @@ import "context"
 type AppSettings struct {
 	Density          string `json:"density"`
 	SidebarCollapsed bool   `json:"sidebarCollapsed"`
+	DataSource       string `json:"dataSource"`
+	DataChannel      string `json:"dataChannel"`
+	DataVersion      string `json:"dataVersion"`
 	AIProvider       string `json:"aiProvider"`
 	AIEndpoint       string `json:"aiEndpoint"`
 	AIModel          string `json:"aiModel"`
 	AIMode           string `json:"aiMode"`
 	ReduceMotion     bool   `json:"reduceMotion"`
+}
+
+type DataSourceOption struct {
+	ID          string `json:"id"`
+	Provider    string `json:"provider"`
+	Channel     string `json:"channel"`
+	Version     string `json:"version"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	SyncReady   bool   `json:"syncReady"`
+	PreRelease  bool   `json:"preRelease"`
 }
 
 type AccountSummary struct {

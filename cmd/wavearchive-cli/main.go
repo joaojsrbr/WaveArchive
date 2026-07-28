@@ -16,6 +16,7 @@ import (
 	"wavearchive/internal/database"
 	"wavearchive/internal/domain"
 	"wavearchive/internal/repository"
+	"wavearchive/internal/sources/arikatsu"
 	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/usecase"
 )
@@ -34,6 +35,9 @@ func run() error {
 	}
 	flags := flag.NewFlagSet("wavearchive-cli", flag.ContinueOnError)
 	dbPath := flags.String("db", filepath.Join(configDir, "WaveArchive", "wavearchive.db"), "caminho do banco SQLite")
+	sourceName := flags.String("source", "nanoka", "fonte do catálogo: nanoka ou arikatsu")
+	version := flags.String("version", "", "snapshot exato; obrigatório para Arikatsu")
+	noAssets := flags.Bool("no-assets", false, "não baixar imagens durante sync")
 	if err := flags.Parse(os.Args[1:]); err != nil {
 		return err
 	}
@@ -60,17 +64,38 @@ func run() error {
 	repo := repository.NewCharacterSQLite(db.SQL())
 	weaponRepo := repository.NewWeaponSQLite(db.SQL())
 	echoRepo := repository.NewEchoSQLite(db.SQL())
-	assetCache := assets.NewCache(filepath.Join(filepath.Dir(resolvedDBPath), "assets"), nil)
-	catalog := usecase.NewCharacterCatalog(repo, nanoka.NewClient(nil), assetCache, logger)
-	weaponCatalog := usecase.NewWeaponCatalog(weaponRepo, nanoka.NewClient(nil), assetCache, logger)
-	echoCatalog := usecase.NewEchoCatalog(echoRepo, nanoka.NewClient(nil), assetCache, logger)
+	var source usecase.CatalogSource = nanoka.NewClient(nil)
+	if *sourceName == "arikatsu" {
+		if *version == "" {
+			*version = "3.5"
+		}
+		source, err = arikatsu.NewClient(*version, filepath.Join(filepath.Dir(resolvedDBPath), "sources", "arikatsu"), nil, nanoka.NewClient(nil))
+		if err != nil {
+			return err
+		}
+	} else if *sourceName != "nanoka" {
+		return fmt.Errorf("fonte desconhecida %q", *sourceName)
+	}
+	var assetCache *assets.Cache
+	if !*noAssets {
+		assetCache = assets.NewCache(filepath.Join(filepath.Dir(resolvedDBPath), "assets"), nil)
+	}
+	catalog := usecase.NewCharacterCatalog(repo, source, assetCache, logger)
+	weaponCatalog := usecase.NewWeaponCatalog(weaponRepo, source, assetCache, logger)
+	echoCatalog := usecase.NewEchoCatalog(echoRepo, source, assetCache, logger)
 	ctx := context.Background()
 
 	switch args[0] {
 	case "sync":
-		result, err := catalog.Sync(ctx, func(stage string, progress int) {
+		syncProgress := func(stage string, progress int) {
 			fmt.Fprintf(os.Stderr, "\r%-14s %3d%%", stage, progress)
-		})
+		}
+		var result domain.SyncResult
+		if *version == "" {
+			result, err = catalog.Sync(ctx, syncProgress)
+		} else {
+			result, err = catalog.SyncVersion(ctx, *version, syncProgress)
+		}
 		fmt.Fprintln(os.Stderr)
 		if err != nil {
 			return err
@@ -154,7 +179,7 @@ func printUsage() {
 	fmt.Println(`WaveArchive CLI
 
 Uso:
-  wavearchive-cli [-db caminho] sync
+  wavearchive-cli [-db caminho] [-source nanoka|arikatsu] [-version 3.5] sync
   wavearchive-cli [-db caminho] list
   wavearchive-cli [-db caminho] list-weapons
   wavearchive-cli [-db caminho] list-echoes

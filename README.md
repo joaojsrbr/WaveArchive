@@ -20,6 +20,8 @@ computador do usuário.
 - calculadora determinística e dados de inimigos;
 - assistente contextual com Ollama, LM Studio e Gemini;
 - sincronização e cache local dos dados e imagens.
+- seleção de fonte entre Nanoka (Live 3.5 ou Latest 3.6.1) e Arikatsu Data
+  (branches 3.5, 3.4 e 3.3).
 
 Dados oficiais exibidos pelo aplicativo vêm das fontes sincronizadas. Dados
 ausentes não devem ser inventados.
@@ -101,6 +103,7 @@ executado pelo aplicativo.
 
 ```powershell
 go run ./cmd/wavearchive-cli sync
+go run ./cmd/wavearchive-cli --source arikatsu --version 3.5 sync
 go run ./cmd/wavearchive-cli list
 go run ./cmd/wavearchive-cli list-weapons
 go run ./cmd/wavearchive-cli show 1102

@@ -208,6 +208,7 @@ export async function deleteAIConversation(id: number): Promise<void> { await ap
 export async function listBuildVersions(id:number){return (await api()?.ListBuildVersions(id))??[];}
 export async function getSettings(){const b=api();if(!b)throw new Error("Configurações disponíveis no desktop.");return b.GetSettings();}
 export async function saveSettings(value:import("../types").AppSettings){const b=api();if(!b)throw new Error("Configurações disponíveis no desktop.");return b.SaveSettings(value);}
+export async function listDataSourceOptions(){const b=api();if(!b)throw new Error("Fontes disponíveis no desktop.");return b.ListDataSourceOptions();}
 export async function getAccountSummary(){const b=api();if(!b)throw new Error("Conta disponível no desktop.");return b.GetAccountSummary();}
 export async function saveAccountSummary(value:import("../types").AccountSummary){const b=api();if(!b)throw new Error("Conta disponível no desktop.");return b.SaveAccountSummary(value);}
 export async function listEnemies(){return (await api()?.ListEnemies())??[];}

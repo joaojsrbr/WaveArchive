@@ -35,6 +35,7 @@ func CharacterIndex(id string, source dto.CharacterIndexEntry, version string) (
 			WeaponTypeName: weaponTypeName(source.Weapon),
 			IconPath:       source.Icon,
 			BackgroundPath: source.Background,
+			Gender:         source.Gender,
 			GameVersion:    version,
 			APIOrder:       source.APIOrder,
 		},
@@ -58,6 +59,7 @@ func MergeCharacterDetail(profile domain.CharacterProfile, source dto.CharacterD
 	profile.Description = normalizer.CleanText(source.Description)
 	profile.Birthday = source.CharaInfo.Birth
 	profile.Gender = source.CharaInfo.Sex
+	profile.Character.Gender = source.CharaInfo.Sex
 	profile.Region = source.CharaInfo.Country
 	profile.Faction = source.CharaInfo.Influence
 	profile.TalentName = source.CharaInfo.TalentName

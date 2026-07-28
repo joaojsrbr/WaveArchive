@@ -3,7 +3,7 @@ import {
   Bot, Calculator, ChevronDown, CircleDotDashed,
   ChevronRight, Database, Gauge, Grid3X3, List, PackageOpen,
   RefreshCw, Search, Settings, ShieldCheck, Sparkles, Star,
-  Swords, UserRound, UsersRound, Waves
+  Swords, UserRound, UsersRound, Waves, X
 } from "lucide-react";
 import { CharacterDetail } from "./CharacterDetail";
 import { BuildsPage } from "./BuildsPage";
@@ -14,6 +14,7 @@ import { CalculatorPage } from "./CalculatorPage";
 import { AssistantPage } from "./AssistantPage";
 import { AccountPage, DashboardPage, SettingsPage } from "./WorkspacePages";
 import { cancelSync, catalogStatus, getCharacter, listCharacters, restoreLatestSnapshot, syncCharacters, updateCharacterAccount } from "./lib/backend";
+import { isRoverCharacter, roverGender } from "./lib/characters";
 import type { CatalogStatus, Character, CharacterAccountUpdate, CharacterFilter, CharacterProfile } from "./types";
 
 type PageID = "dashboard" | "characters" | "weapons" | "echoes" | "sonata" | "teams" | "builds" | "calculator" | "account" | "ai" | "settings";
@@ -205,10 +206,11 @@ export function App() {
     });
   }
 
-  const resultLabel = useMemo(
-    () => `${characters.length} ${characters.length === 1 ? "personagem" : "personagens"}`,
-    [characters.length]
-  );
+  const resultLabel = useMemo(() => {
+    const roverCount=characters.filter(isRoverCharacter).length;
+    const visibleCount=roverCount>1?characters.length-roverCount+1:characters.length;
+    return `${visibleCount} ${visibleCount===1?"personagem":"personagens"}${roverCount>1?` · ${roverCount} formas Rover agrupadas`:""}`;
+  },[characters]);
 
   return (
     <div className="shell">
@@ -356,49 +358,96 @@ export function App() {
 }
 
 function CharacterGrid({ characters, onOpen, onFavorite }: { characters: Character[]; onOpen: (id: number) => void; onFavorite: (character: Character) => Promise<void> }) {
-  return <div className="characterGrid">{characters.map((character) => (
+  const [showRoverPicker,setShowRoverPicker]=useState(false);
+  const items=groupCharacterCatalog(characters);
+  const rover=characters.filter(isRoverCharacter);
+  return <><div className="characterGrid">{items.map((item) => item.kind==="rover"?(
+    <RoverGroupCard key="rover-group" variants={item.variants} onOpen={()=>setShowRoverPicker(true)}/>
+  ):(
     <article
       className="characterCard"
-      key={character.id}
+      key={item.character.id}
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(character.id)}
+      onClick={() => onOpen(item.character.id)}
       onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") onOpen(character.id);
+        if (event.key === "Enter" || event.key === " ") onOpen(item.character.id);
       }}
     >
-      <div className={`portrait element-${character.elementCode}`}>
-        {character.iconPath.startsWith("/cache/") && <img src={character.iconPath} alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}
-        <span>{initials(character.name)}</span>
-        <RarityStars value={character.rarity} />
+      <div className={`portrait element-${item.character.elementCode}`}>
+        {item.character.iconPath.startsWith("/cache/") && <img src={item.character.iconPath} alt="" loading="lazy" onError={(event) => { event.currentTarget.style.display = "none"; }} />}
+        <span>{initials(item.character.name)}</span>
+        <RarityStars value={item.character.rarity} />
       </div>
       <div className="cardBody">
         <div className="cardTitle">
-          <div><h2>{character.name}</h2>{character.nickname && character.nickname !== character.name && <p>{character.nickname}</p>}</div>
-          <button className="favorite" onClick={(event) => { event.stopPropagation(); void onFavorite(character).catch(() => undefined); }} aria-label={`Favoritar ${character.name}`}><Star size={17} strokeWidth={1.5} fill={character.favorite ? "currentColor" : "none"} /></button>
+          <div><h2>{item.character.name}</h2>{item.character.nickname && item.character.nickname !== item.character.name && <p>{item.character.nickname}</p>}</div>
+          <button className="favorite" onClick={(event) => { event.stopPropagation(); void onFavorite(item.character).catch(() => undefined); }} aria-label={`Favoritar ${item.character.name}`}><Star size={17} strokeWidth={1.5} fill={item.character.favorite ? "currentColor" : "none"} /></button>
         </div>
         <div className="tags">
-          <span><i className={`elementDot element-${character.elementCode}`} />{character.element}</span>
-          <span>{character.weaponType}</span>
+          <span><i className={`elementDot element-${item.character.elementCode}`} />{item.character.element}</span>
+          <span>{item.character.weaponType}</span>
         </div>
-        <footer><span>{character.owned ? `NV. ${character.level} · S${character.sequence}` : "NÃO REGISTRADO"}</span><ChevronRight size={17} aria-hidden="true" /></footer>
+        <footer><span>{item.character.owned ? `NV. ${item.character.level} · S${item.character.sequence}` : "NÃO REGISTRADO"}</span><ChevronRight size={17} aria-hidden="true" /></footer>
       </div>
     </article>
-  ))}</div>;
+  ))}</div>{showRoverPicker&&<RoverVariantPicker variants={rover} onClose={()=>setShowRoverPicker(false)} onOpen={id=>{setShowRoverPicker(false);onOpen(id)}}/>}</>;
 }
 
 function CharacterTable({ characters, onOpen }: { characters: Character[]; onOpen: (id: number) => void }) {
-  return <div className="tableWrap"><table>
+  const [showRoverPicker,setShowRoverPicker]=useState(false);
+  const items=groupCharacterCatalog(characters);
+  const rover=characters.filter(isRoverCharacter);
+  return <><div className="tableWrap"><table>
     <thead><tr><th>Personagem</th><th>Elemento</th><th>Raridade</th><th>Arma</th><th>Conta</th><th /></tr></thead>
-    <tbody>{characters.map((character) => <tr key={character.id}>
-      <td><span className={`miniPortrait element-${character.elementCode}`}>{initials(character.name)}</span><span><strong>{character.name}</strong><small>{character.nickname}</small></span></td>
-      <td><span className="tableTag"><i className={`elementDot element-${character.elementCode}`} />{character.element}</span></td>
-      <td><RarityStars value={character.rarity} /></td>
-      <td>{character.weaponType}</td>
-      <td>{character.owned ? `Nv. ${character.level} · S${character.sequence}` : "Não registrado"}</td>
-      <td><button onClick={() => onOpen(character.id)} aria-label={`Abrir ${character.name}`}><ChevronRight size={18} /></button></td>
+    <tbody>{items.map((item) => item.kind==="rover"?<tr key="rover-group" className="roverTableRow">
+      <td><span className="miniPortrait roverMiniPortrait">R</span><span><strong>Rover</strong><small>{item.variants.length} variantes oficiais</small></span></td>
+      <td><span className="tableTag">4 ELEMENTOS</span></td><td><RarityStars value={5}/></td><td>Sword</td>
+      <td>{item.variants.filter(character=>character.owned).length} registradas</td><td><button onClick={()=>setShowRoverPicker(true)} aria-label="Escolher variante do Rover"><ChevronRight size={18}/></button></td>
+    </tr>:<tr key={item.character.id}>
+      <td><span className={`miniPortrait element-${item.character.elementCode}`}>{initials(item.character.name)}</span><span><strong>{item.character.name}</strong><small>{item.character.nickname}</small></span></td>
+      <td><span className="tableTag"><i className={`elementDot element-${item.character.elementCode}`} />{item.character.element}</span></td>
+      <td><RarityStars value={item.character.rarity} /></td>
+      <td>{item.character.weaponType}</td>
+      <td>{item.character.owned ? `Nv. ${item.character.level} · S${item.character.sequence}` : "Não registrado"}</td>
+      <td><button onClick={() => onOpen(item.character.id)} aria-label={`Abrir ${item.character.name}`}><ChevronRight size={18} /></button></td>
     </tr>)}</tbody>
-  </table></div>;
+  </table></div>{showRoverPicker&&<RoverVariantPicker variants={rover} onClose={()=>setShowRoverPicker(false)} onOpen={id=>{setShowRoverPicker(false);onOpen(id)}}/>}</>;
+}
+
+type CharacterCatalogItem={kind:"character";character:Character}|{kind:"rover";variants:Character[]};
+
+function groupCharacterCatalog(characters:Character[]):CharacterCatalogItem[]{
+  const rover=characters.filter(isRoverCharacter);
+  if(rover.length<2)return characters.map(character=>({kind:"character",character}));
+  let added=false;
+  return characters.flatMap(character=>{
+    if(!isRoverCharacter(character))return [{kind:"character",character} as CharacterCatalogItem];
+    if(added)return [];
+    added=true;
+    return [{kind:"rover",variants:rover} as CharacterCatalogItem];
+  });
+}
+
+function RoverGroupCard({variants,onOpen}:{variants:Character[];onOpen:()=>void}){
+  const male=variants.find(character=>roverGender(character)==="male");
+  const female=variants.find(character=>roverGender(character)==="female");
+  const elements=Array.from(new Map(variants.map(character=>[character.elementCode,character])).values());
+  return <article className="characterCard roverGroupCard" role="button" tabIndex={0} onClick={onOpen} onKeyDown={event=>{if(event.key==="Enter"||event.key===" ")onOpen()}}>
+    <div className="roverPortraitPair">{[female,male].map((character,index)=><div key={character?.id??index} className={`element-${character?.elementCode??0}`}>{character?.iconPath.startsWith("/cache/")&&<img src={character.iconPath} alt="" loading="lazy"/>}</div>)}<span className="roverMark">R</span></div>
+    <div className="cardBody"><div className="cardTitle"><div><h2>Rover</h2><p>Masculino e feminino · {variants.length} variantes</p></div></div>
+      <div className="roverElementList">{elements.map(character=><span key={character.elementCode}><i className={`elementDot element-${character.elementCode}`}/>{character.element}</span>)}</div>
+      <footer><span>ESCOLHER GÊNERO E ELEMENTO</span><ChevronRight size={17}/></footer>
+    </div>
+  </article>;
+}
+
+function RoverVariantPicker({variants,onClose,onOpen}:{variants:Character[];onClose:()=>void;onOpen:(id:number)=>void}){
+  const groups=(["female","male"] as const).map(gender=>({gender,characters:variants.filter(character=>roverGender(character)===gender).sort((a,b)=>a.apiOrder-b.apiOrder)})).filter(group=>group.characters.length);
+  return <div className="modalBackdrop roverPickerBackdrop" onMouseDown={onClose}><section className="roverPicker" role="dialog" aria-modal="true" aria-labelledby="rover-picker-title" onMouseDown={event=>event.stopPropagation()}>
+    <header><div><span className="sectionLabel">PERSONAGEM MULTIFORMA</span><h2 id="rover-picker-title">Escolha o Rover</h2><p>Gênero e elemento mantêm IDs, progressão e habilidades independentes.</p></div><button onClick={onClose} aria-label="Fechar"><X size={19}/></button></header>
+    <div className="roverGenderGroups">{groups.map(group=><section key={group.gender}><div className="roverGenderHeading"><UserRound size={17}/><div><b>{group.gender==="female"?"Feminino":"Masculino"}</b><small>{group.characters.length} elementos</small></div></div><div className="roverVariants">{group.characters.map(character=><button key={character.id} className={`element-${character.elementCode}`} onClick={()=>onOpen(character.id)}>{character.iconPath.startsWith("/cache/")&&<img src={character.iconPath} alt=""/>}<span><i className={`elementDot element-${character.elementCode}`}/><b>{character.element}</b><small>{character.owned?`Nv. ${character.level} · S${character.sequence}`:"Não registrado"}</small></span><ChevronRight size={16}/></button>)}</div></section>)}</div>
+  </section></div>;
 }
 
 function EmptyState({ hasCatalog, syncing, onSync }: { hasCatalog: boolean; syncing: boolean; onSync: () => void }) {

@@ -15,13 +15,14 @@ gerenciamento de dados de Wuthering Waves. O executável não depende do
 - Frontend: React 19, TypeScript e Vite.
 - Persistência: SQLite via `modernc.org/sqlite`.
 - Interface: tema escuro premium com ícones Lucide.
-- Fontes externas: Nanoka e servidor de guias configurado no código.
+- Fontes externas: Nanoka, catálogo de branches do Arikatsu Data e servidor de
+  guias configurado no código.
 - IA: Ollama, LM Studio e Gemini, atrás do analisador Go.
 
 ## Fluxo principal
 
 ```text
-Nanoka / guias
+Nanoka / Arikatsu Data / guias
       ↓
 clientes em internal/sources
       ↓
@@ -50,6 +51,21 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
 - `internal/usecase`: regras do catálogo, builds, equipes, dano, rotações e IA.
 - `internal/repository`: persistência SQLite.
 - `internal/sources/nanoka`: cliente, DTOs e mapeamento da API Nanoka.
+- A seleção de fonte e versão é persistida em `app_settings`. Nanoka Live 3.5
+  e Latest 3.6.1 sincronizam snapshots fechados.
+- `internal/sources/arikatsu`: adapter dos JSONs brutos das branches 3.5, 3.4 e
+  3.3. Normaliza personagens, armas, Echoes, Sonata Effects e localização
+  portuguesa para os mesmos DTOs internos usados pelo catálogo. Os arquivos
+  brutos são armazenados em `sources/arikatsu/<versão>` no diretório local do
+  app. Campos detalhados ainda não presentes no adapter são enriquecidos pelo
+  snapshot Nanoka da mesma versão; se o detalhe não estiver disponível, a
+  sincronização preserva o detalhe anterior em vez de gravar dados vazios.
+- Variantes cosméticas `MonsterInfo_35*` existem no inventário bruto Arikatsu,
+  mas não são entradas independentes do Data Bank e não entram no catálogo de
+  Echoes.
+- A substituição do catálogo de Echoes remove registros fora do snapshot apenas
+  quando não estão referenciados em `owned_echoes`; dados pessoais nunca são
+  apagados pela troca de fonte ou versão.
 - `internal/sources/guide`: cliente dos guias externos.
 - `internal/assets`: cache validado de imagens.
 - `internal/database`: abertura, backup, restauração e migrations incorporadas.

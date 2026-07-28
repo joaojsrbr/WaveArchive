@@ -14,6 +14,7 @@ type CharacterIndexEntry struct {
 	Weapon     int    `json:"weapon"`
 	Icon       string `json:"icon"`
 	Background string `json:"background"`
+	Gender     string `json:"-"`
 	APIOrder   int    `json:"-"`
 }
 

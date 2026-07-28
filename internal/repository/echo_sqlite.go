@@ -117,7 +117,49 @@ func (r *EchoSQLite) ReplaceSynced(ctx context.Context, version string, echoes [
 			return err
 		}
 	}
+	echoIDs := make([]int64, 0, len(echoes))
+	for _, echo := range echoes {
+		echoIDs = append(echoIDs, echo.ID)
+	}
+	if err := deleteStaleEchoes(ctx, tx, echoIDs); err != nil {
+		return err
+	}
+	sonataIDs := make([]int64, 0, len(sonatas))
+	for _, sonata := range sonatas {
+		sonataIDs = append(sonataIDs, sonata.ID)
+	}
+	if err := deleteStaleSonatas(ctx, tx, sonataIDs); err != nil {
+		return err
+	}
 	return tx.Commit()
+}
+
+func deleteStaleEchoes(ctx context.Context, tx *sql.Tx, active []int64) error {
+	query := `DELETE FROM echoes
+		WHERE NOT EXISTS (SELECT 1 FROM owned_echoes oe WHERE oe.echo_id=echoes.id)`
+	args := make([]any, len(active))
+	if len(active) > 0 {
+		query += " AND id NOT IN (" + strings.TrimSuffix(strings.Repeat("?,", len(active)), ",") + ")"
+		for index, id := range active {
+			args[index] = id
+		}
+	}
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
+}
+
+func deleteStaleSonatas(ctx context.Context, tx *sql.Tx, active []int64) error {
+	query := `DELETE FROM echo_sets
+		WHERE NOT EXISTS (SELECT 1 FROM owned_echoes oe WHERE oe.sonata_id=echo_sets.id)`
+	args := make([]any, len(active))
+	if len(active) > 0 {
+		query += " AND id NOT IN (" + strings.TrimSuffix(strings.Repeat("?,", len(active)), ",") + ")"
+		for index, id := range active {
+			args[index] = id
+		}
+	}
+	_, err := tx.ExecContext(ctx, query, args...)
+	return err
 }
 
 func (r *EchoSQLite) ListOwned(ctx context.Context) ([]domain.OwnedEcho, error) {

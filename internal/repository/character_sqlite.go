@@ -56,7 +56,7 @@ func (r *CharacterSQLite) List(ctx context.Context, filter domain.CharacterFilte
 
 	query := `
 		SELECT c.id, c.name, c.nickname, c.rarity, c.element, c.weapon_type,
-		       c.icon_path, c.background_path, c.game_version, c.api_order,
+		       c.icon_path, c.background_path, c.gender, c.game_version, c.api_order,
 		       COALESCE(oc.owned, 0), COALESCE(oc.level, 1),
 		       COALESCE(oc.sequence, 0), COALESCE(oc.favorite, 0)
 		FROM characters c
@@ -75,7 +75,7 @@ func (r *CharacterSQLite) List(ctx context.Context, filter domain.CharacterFilte
 		var c domain.Character
 		if err := rows.Scan(
 			&c.ID, &c.Name, &c.Nickname, &c.Rarity, &c.Element, &c.WeaponType,
-			&c.IconPath, &c.BackgroundPath, &c.GameVersion, &c.APIOrder,
+			&c.IconPath, &c.BackgroundPath, &c.Gender, &c.GameVersion, &c.APIOrder,
 			&c.Owned, &c.Level, &c.Sequence, &c.Favorite,
 		); err != nil {
 			return nil, err
@@ -115,6 +115,7 @@ func (r *CharacterSQLite) GetProfile(ctx context.Context, id int64) (domain.Char
 	}
 	profile.Character.ElementName = profile.Character.Element.String()
 	profile.Character.WeaponTypeName = weaponTypeName(profile.Character.WeaponType)
+	profile.Character.Gender = profile.Gender
 	_ = json.Unmarshal([]byte(extrasJSON), &profile.Extras)
 
 	if signatureID.Valid {

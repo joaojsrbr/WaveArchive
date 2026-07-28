@@ -10,20 +10,21 @@ import (
 
 	"wavearchive/internal/assets"
 	"wavearchive/internal/domain"
-	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/sources/nanoka/mapper"
 )
 
 type WeaponCatalog struct {
 	repository domain.WeaponRepository
-	source     *nanoka.Client
+	source     CatalogSource
 	assets     *assets.Cache
 	logger     *slog.Logger
 }
 
-func NewWeaponCatalog(repository domain.WeaponRepository, source *nanoka.Client, assetCache *assets.Cache, logger *slog.Logger) *WeaponCatalog {
+func NewWeaponCatalog(repository domain.WeaponRepository, source CatalogSource, assetCache *assets.Cache, logger *slog.Logger) *WeaponCatalog {
 	return &WeaponCatalog{repository: repository, source: source, assets: assetCache, logger: logger}
 }
+
+func (c *WeaponCatalog) SetSource(source CatalogSource) { c.source = source }
 
 func (c *WeaponCatalog) List(ctx context.Context, filter domain.WeaponFilter) ([]domain.Weapon, error) {
 	return c.repository.List(ctx, filter)

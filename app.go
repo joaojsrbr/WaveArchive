@@ -21,6 +21,7 @@ import (
 	"wavearchive/internal/database"
 	"wavearchive/internal/domain"
 	"wavearchive/internal/repository"
+	arikatsusource "wavearchive/internal/sources/arikatsu"
 	guidesource "wavearchive/internal/sources/guide"
 	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/usecase"
@@ -285,6 +286,16 @@ func (a *App) SaveSettings(settings domain.AppSettings) (domain.AppSettings, err
 	}
 	return a.workspace.SaveSettings(a.context(), settings)
 }
+
+func (a *App) ListDataSourceOptions() []domain.DataSourceOption {
+	return []domain.DataSourceOption{
+		{ID: "nanoka-live", Provider: "nanoka", Channel: "live", Version: "3.5", Label: "Nanoka · Live 3.5", Description: "Versão atualmente disponível no jogo.", SyncReady: true},
+		{ID: "nanoka-latest", Provider: "nanoka", Channel: "latest", Version: "3.6.1", Label: "Nanoka · Latest 3.6.1", Description: "Dados antecipados; podem mudar antes do lançamento.", SyncReady: true, PreRelease: true},
+		{ID: "arikatsu-3.5", Provider: "arikatsu", Channel: "3.5", Version: "3.5", Label: "Arikatsu Data · 3.5", Description: "Última branch, normalizada localmente.", SyncReady: true},
+		{ID: "arikatsu-3.4", Provider: "arikatsu", Channel: "3.4", Version: "3.4", Label: "Arikatsu Data · 3.4", Description: "Penúltima branch, normalizada localmente.", SyncReady: true},
+		{ID: "arikatsu-3.3", Provider: "arikatsu", Channel: "3.3", Version: "3.3", Label: "Arikatsu Data · 3.3", Description: "Terceira branch mais recente, normalizada localmente.", SyncReady: true},
+	}
+}
 func (a *App) GetAccountSummary() (domain.AccountSummary, error) {
 	if err := a.ready(); err != nil {
 		return domain.AccountSummary{}, err
@@ -500,13 +511,33 @@ func (a *App) SyncCharacters() (domain.SyncResult, error) {
 		a.syncMu.Unlock()
 	}()
 
+	settings, err := a.workspace.Settings(ctx)
+	if err != nil {
+		return domain.SyncResult{}, fmt.Errorf("load data source settings: %w", err)
+	}
+	source := usecase.CatalogSource(nanoka.NewClient(nil))
+	if settings.DataSource == "arikatsu" {
+		arikatsuClient, sourceErr := arikatsusource.NewClient(
+			settings.DataVersion,
+			filepath.Join(a.dataDir, "sources", "arikatsu"),
+			nil,
+			nanoka.NewClient(nil),
+		)
+		if sourceErr != nil {
+			return domain.SyncResult{}, sourceErr
+		}
+		source = arikatsuClient
+	}
+	a.catalog.SetSource(source)
+	a.weapons.SetSource(source)
+	a.echoes.SetSource(source)
 	if err := a.createSnapshot(ctx); err != nil {
 		a.logger.Warn("could not create pre-sync snapshot", "error", err)
 	}
 	if a.ctx != nil {
 		runtime.EventsEmit(a.ctx, "catalog:sync", map[string]any{"stage": "detecting", "progress": 0})
 	}
-	result, err := a.catalog.Sync(ctx, func(stage string, progress int) {
+	result, err := a.catalog.SyncVersion(ctx, settings.DataVersion, func(stage string, progress int) {
 		if a.ctx != nil {
 			runtime.EventsEmit(a.ctx, "catalog:sync", map[string]any{"stage": stage, "progress": progress * 55 / 100})
 		}
