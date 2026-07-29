@@ -35,11 +35,40 @@ func (r *CharacterSQLite) List(ctx context.Context, filter domain.CharacterFilte
 		where = append(where, "c.rarity = ?")
 		args = append(args, filter.Rarity)
 	}
+	if filter.WeaponType > 0 {
+		where = append(where, "c.weapon_type = ?")
+		args = append(args, filter.WeaponType)
+	}
+	if filter.Gender != "" {
+		where = append(where, "LOWER(c.gender) = LOWER(?)")
+		args = append(args, filter.Gender)
+	}
+	if filter.Account == "owned" {
+		where = append(where, "COALESCE(oc.owned, 0) = 1")
+	} else if filter.Account == "missing" {
+		where = append(where, "COALESCE(oc.owned, 0) = 0")
+	}
 	if filter.OwnedOnly {
 		where = append(where, "COALESCE(oc.owned, 0) = 1")
 	}
 	if filter.Favorites {
 		where = append(where, "COALESCE(oc.favorite, 0) = 1")
+	}
+	if filter.MinLevel > 0 {
+		where = append(where, "COALESCE(oc.level, 1) >= ?")
+		args = append(args, filter.MinLevel)
+	}
+	if filter.MaxLevel > 0 {
+		where = append(where, "COALESCE(oc.level, 1) <= ?")
+		args = append(args, filter.MaxLevel)
+	}
+	if filter.MinSequence > 0 {
+		where = append(where, "COALESCE(oc.sequence, 0) >= ?")
+		args = append(args, filter.MinSequence)
+	}
+	if filter.MaxSequence > 0 {
+		where = append(where, "COALESCE(oc.sequence, 0) <= ?")
+		args = append(args, filter.MaxSequence)
 	}
 
 	order := "c.name COLLATE NOCASE ASC"
@@ -560,9 +589,7 @@ func (r *CharacterSQLite) Status(ctx context.Context) (domain.CatalogStatus, err
 		status.Version = version.String
 	}
 	if synced.Valid {
-		if parsed, err := time.Parse(time.RFC3339, synced.String); err == nil {
-			status.LastSyncAt = &parsed
-		}
+		status.LastSyncAt = synced.String
 	}
 	return status, nil
 }

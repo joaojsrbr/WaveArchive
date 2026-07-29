@@ -8,10 +8,17 @@ import (
 	"wavearchive/internal/domain"
 )
 
-type TeamManager struct{ repository domain.TeamRepository }
+type TeamManager struct {
+	repository domain.TeamRepository
+	builds     domain.BuildRepository
+}
 
-func NewTeamManager(repository domain.TeamRepository) *TeamManager {
-	return &TeamManager{repository: repository}
+func NewTeamManager(repository domain.TeamRepository, builds ...domain.BuildRepository) *TeamManager {
+	manager := &TeamManager{repository: repository}
+	if len(builds) > 0 {
+		manager.builds = builds[0]
+	}
+	return manager
 }
 
 func (m *TeamManager) List(ctx context.Context) ([]domain.Team, error) {
@@ -38,6 +45,15 @@ func (m *TeamManager) Save(ctx context.Context, team domain.Team) (domain.Team, 
 		}
 		if _, exists := seen[member.CharacterID]; exists {
 			return domain.Team{}, errors.New("a character cannot occupy two team slots")
+		}
+		if member.BuildID != nil && m.builds != nil {
+			build, err := m.builds.Get(ctx, *member.BuildID)
+			if err != nil {
+				return domain.Team{}, errors.New("linked build is unavailable")
+			}
+			if build.CharacterID != member.CharacterID {
+				return domain.Team{}, errors.New("linked build belongs to another character")
+			}
 		}
 		seen[member.CharacterID] = struct{}{}
 	}

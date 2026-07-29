@@ -1,5 +1,14 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
+  AlertTriangle,
+  ArrowRight,
+  Clock3,
+  Database,
+  Layers3,
+  Star,
+  UsersRound,
+} from 'lucide-react';
+import {
   createManualBackup,
   dashboardSummary,
   diagnostics,
@@ -8,7 +17,12 @@ import {
   getSettings,
   importArchive,
   listBackups,
+  listBuilds,
+  listCharacters,
   listDataSourceOptions,
+  listEchoes,
+  listTeams,
+  listWeapons,
   restoreBackup,
   saveAccountSummary,
   saveSettings,
@@ -25,57 +39,325 @@ import { parseArchive } from './lib/archive';
 export function DashboardPage({
   onError,
   onNavigate,
+  onOpen,
 }: {
   onError: (m: string) => void;
   onNavigate: (p: any) => void;
+  onOpen: (kind: string, id: number, title: string) => void;
 }) {
   const [data, setData] = useState<DashboardSummary>();
+  const [recent, setRecent] = useState<OperationalItem[]>([]);
+  const [favorites, setFavorites] = useState<OperationalItem[]>([]);
+  const [incomplete, setIncomplete] = useState<OperationalItem[]>([]);
   useEffect(() => {
-    void dashboardSummary()
-      .then(setData)
+    void Promise.all([
+      dashboardSummary().catch(() => undefined),
+      listCharacters({
+        query: '',
+        element: 0,
+        rarity: 0,
+        ownedOnly: false,
+        favorites: false,
+        sort: 'api',
+      }),
+      listWeapons({
+        query: '',
+        type: 0,
+        rarity: 0,
+        ownedOnly: false,
+        favorites: false,
+        sort: 'id',
+      }),
+      listEchoes({
+        query: '',
+        cost: 0,
+        sonataId: 0,
+        ownedOnly: false,
+        favorites: false,
+        sort: 'id',
+      }),
+      listBuilds(),
+      listTeams(),
+    ])
+      .then(([summary, characters, weapons, echoes, builds, teams]) => {
+        const buildIDs = new Set(builds.map((build) => build.id));
+        setData(
+          summary || {
+            characters: characters.length,
+            weapons: weapons.length,
+            echoes: echoes.length,
+            builds: builds.length,
+            teams: teams.length,
+            recentBuilds: builds.slice(0, 3),
+          }
+        );
+        setRecent(
+          [
+            ...builds.map((build) => ({
+              key: `build-${build.id}`,
+              kind: 'build',
+              id: build.id,
+              title: build.name,
+              subtitle: `${build.characterName} · ${build.weaponName || 'Sem arma'}`,
+              meta: 'Build',
+              timestamp: build.updatedAt || build.createdAt,
+              iconPath: build.characterIcon,
+            })),
+            ...teams.map((team) => ({
+              key: `team-${team.id}`,
+              kind: 'team',
+              id: team.id,
+              title: team.name,
+              subtitle: team.members.map((member) => member.characterName).join(' · '),
+              meta: 'Equipe',
+              timestamp: team.updatedAt || team.createdAt,
+              iconPath: team.members[0]?.characterIcon,
+            })),
+          ]
+            .sort((left, right) => toTimestamp(right.timestamp) - toTimestamp(left.timestamp))
+            .slice(0, 6)
+        );
+        setFavorites(
+          [
+            ...characters
+              .filter((item) => item.favorite)
+              .map((item) => ({
+                key: `character-${item.id}`,
+                kind: 'character',
+                id: item.id,
+                title: item.name,
+                subtitle: `${item.element} · ${item.weaponType}`,
+                meta: 'Personagem',
+                iconPath: item.iconPath,
+              })),
+            ...weapons
+              .filter((item) => item.favorite)
+              .map((item) => ({
+                key: `weapon-${item.id}`,
+                kind: 'weapon',
+                id: item.id,
+                title: item.name,
+                subtitle: `${item.type} · ${item.rarity} estrelas`,
+                meta: 'Arma',
+                iconPath: item.iconPath,
+              })),
+            ...echoes
+              .filter((item) => item.favorite)
+              .map((item) => ({
+                key: `echo-${item.id}`,
+                kind: 'echo',
+                id: item.id,
+                title: item.name,
+                subtitle: `${item.class || item.type} · Custo ${item.cost}`,
+                meta: 'Echo',
+                iconPath: item.iconPath,
+              })),
+            ...builds
+              .filter((item) => item.favorite)
+              .map((item) => ({
+                key: `build-${item.id}`,
+                kind: 'build',
+                id: item.id,
+                title: item.name,
+                subtitle: item.characterName,
+                meta: 'Build',
+                iconPath: item.characterIcon,
+              })),
+            ...teams
+              .filter((item) => item.favorite)
+              .map((item) => ({
+                key: `team-${item.id}`,
+                kind: 'team',
+                id: item.id,
+                title: item.name,
+                subtitle: item.members.map((member) => member.characterName).join(' · '),
+                meta: 'Equipe',
+                iconPath: item.members[0]?.characterIcon,
+              })),
+          ].slice(0, 8)
+        );
+        setIncomplete([
+          ...builds
+            .filter((build) => !build.weaponId || build.echoes.length < 5)
+            .map((build) => ({
+              key: `build-${build.id}`,
+              kind: 'build',
+              id: build.id,
+              title: build.name,
+              subtitle: build.characterName,
+              meta: 'Build incompleta',
+              reason: [
+                !build.weaponId ? 'sem arma' : '',
+                build.echoes.length < 5 ? `${build.echoes.length}/5 Echoes` : '',
+              ]
+                .filter(Boolean)
+                .join(' · '),
+              iconPath: build.characterIcon,
+            })),
+          ...teams
+            .filter((team) =>
+              team.members.some(
+                (member) => !member.buildId || (member.buildId && !buildIDs.has(member.buildId))
+              )
+            )
+            .map((team) => ({
+              key: `team-${team.id}`,
+              kind: 'team',
+              id: team.id,
+              title: team.name,
+              subtitle: team.members.map((member) => member.characterName).join(' · '),
+              meta: 'Equipe incompleta',
+              reason: `${team.members.filter((member) => member.buildId && buildIDs.has(member.buildId)).length}/3 Builds vinculadas`,
+              iconPath: team.members[0]?.characterIcon,
+            })),
+        ]);
+        onError('');
+      })
       .catch((e) => onError(message(e)));
   }, []);
   return (
-    <div className="workspacePage">
-      <Intro
-        eyebrow="CENTRO LOCAL-FIRST"
-        title="VISÃO GERAL"
-        text="Seu catálogo, theorycraft e progresso em um só lugar."
-      />
-      <div className="summaryGrid">
+    <div className="operationalDashboard">
+      <header className="operationalHero">
+        <div>
+          <span className="sectionLabel">CENTRO OPERACIONAL · LOCAL-FIRST</span>
+          <h1>Visão geral</h1>
+          <p>Retome composições, encontre favoritos e resolva itens pendentes.</p>
+        </div>
+        <button onClick={() => onNavigate('builds')}>
+          Nova composição
+          <ArrowRight size={15} />
+        </button>
+      </header>
+      <div className="operationalMetrics">
         {[
-          ['Personagens', data?.characters],
-          ['Armas', data?.weapons],
-          ['Echoes', data?.echoes],
-          ['Builds', data?.builds],
-          ['Equipes', data?.teams],
-        ].map(([label, value]) => (
+          ['Personagens', data?.characters, <Database size={15} />],
+          ['Armas', data?.weapons, <Layers3 size={15} />],
+          ['Echoes', data?.echoes, <Database size={15} />],
+          ['Builds', data?.builds, <Layers3 size={15} />],
+          ['Equipes', data?.teams, <UsersRound size={15} />],
+        ].map(([label, value, icon]) => (
           <article key={String(label)}>
-            <small>{label}</small>
-            <strong>{value ?? '—'}</strong>
+            {icon}
+            <span>
+              <small>{label}</small>
+              <strong>{value ?? '—'}</strong>
+            </span>
           </article>
         ))}
       </div>
-      <div className="workspaceColumns">
-        <section>
-          <h2>Builds recentes</h2>
-          {data?.recentBuilds.length ? (
-            data.recentBuilds.map((b) => (
-              <article className="rowItem" key={b.id}>
-                <b>{b.name}</b>
-                <span>
-                  {b.characterName} · {b.gameVersion}
-                </span>
-              </article>
-            ))
-          ) : (
-            <Empty text="Nenhuma build salva." />
-          )}
-          <button onClick={() => onNavigate('builds')}>Abrir builds</button>
-        </section>
+      <div className="operationalSections">
+        <OperationalSection
+          title="Recentes"
+          description="Builds e Equipes alteradas recentemente"
+          icon={<Clock3 size={16} />}
+          items={recent}
+          empty="Nenhuma composição salva recentemente."
+          onOpen={onOpen}
+        />
+        <OperationalSection
+          title="Incompletos"
+          description="Composições que ainda precisam de atenção"
+          icon={<AlertTriangle size={16} />}
+          items={incomplete.slice(0, 8)}
+          empty="Nenhuma composição incompleta."
+          onOpen={onOpen}
+          attention
+        />
+        <OperationalSection
+          title="Favoritos"
+          description="Itens marcados nos catálogos e composições"
+          icon={<Star size={16} />}
+          items={favorites}
+          empty="Nenhum favorito marcado."
+          onOpen={onOpen}
+          wide
+        />
       </div>
     </div>
   );
+}
+
+type OperationalItem = {
+  key: string;
+  kind: string;
+  id: number;
+  title: string;
+  subtitle: string;
+  meta: string;
+  reason?: string;
+  timestamp?: string;
+  iconPath?: string;
+};
+
+function OperationalSection({
+  title,
+  description,
+  icon,
+  items,
+  empty,
+  onOpen,
+  attention = false,
+  wide = false,
+}: {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  items: OperationalItem[];
+  empty: string;
+  onOpen: (kind: string, id: number, title: string) => void;
+  attention?: boolean;
+  wide?: boolean;
+}) {
+  return (
+    <section className={`operationalSection${attention ? ' attention' : ''}${wide ? ' wide' : ''}`}>
+      <header>
+        <span>{icon}</span>
+        <div>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </div>
+        <strong>{items.length}</strong>
+      </header>
+      {items.length ? (
+        <div className="operationalList">
+          {items.map((item) => (
+            <button key={item.key} onClick={() => onOpen(item.kind, item.id, item.title)}>
+              <OperationalPortrait item={item} />
+              <span>
+                <strong>{item.title}</strong>
+                <small>{item.subtitle}</small>
+              </span>
+              <em>{item.reason || item.meta}</em>
+              <ArrowRight size={14} />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="operationalEmpty">{empty}</p>
+      )}
+    </section>
+  );
+}
+
+function OperationalPortrait({ item }: { item: OperationalItem }) {
+  return (
+    <span className="operationalPortrait">
+      {item.iconPath?.startsWith('/cache/') ? (
+        <img src={item.iconPath} alt="" loading="lazy" />
+      ) : (
+        item.title
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((part) => part[0])
+          .join('')
+      )}
+    </span>
+  );
+}
+
+function toTimestamp(value?: string) {
+  const result = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(result) ? result : 0;
 }
 
 export function SettingsPage({ onError }: { onError: (m: string) => void }) {

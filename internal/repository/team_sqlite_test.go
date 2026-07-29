@@ -27,11 +27,23 @@ func TestTeamLifecycle(t *testing.T) {
 	if err := characters.ReplaceSynced(ctx, "3.6.1", profiles); err != nil {
 		t.Fatal(err)
 	}
-	manager := usecase.NewTeamManager(repository.NewTeamSQLite(db.SQL()))
+	buildRepository := repository.NewBuildSQLite(db.SQL())
+	build, err := buildRepository.Save(ctx, domain.Build{
+		Name:           "Jinhsi build",
+		CharacterID:    1,
+		CharacterLevel: 90,
+		WeaponLevel:    90,
+		WeaponRank:     1,
+		GameVersion:    "3.6.1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	manager := usecase.NewTeamManager(repository.NewTeamSQLite(db.SQL()), buildRepository)
 	team, err := manager.Save(ctx, domain.Team{
 		Name: "Spectro coordinated", GameVersion: "3.6.1",
 		Members: []domain.TeamMember{
-			{CharacterID: 1, Role: "main_dps"},
+			{CharacterID: 1, BuildID: &build.ID, Role: "main_dps"},
 			{CharacterID: 2, Role: "sub_dps"},
 			{CharacterID: 3, Role: "support"},
 		},
@@ -41,6 +53,20 @@ func TestTeamLifecycle(t *testing.T) {
 	}
 	if len(team.Members) != 3 || team.Members[1].CharacterName != "Zhezhi" {
 		t.Fatalf("unexpected team: %#v", team)
+	}
+	if team.Members[0].BuildID == nil || *team.Members[0].BuildID != build.ID {
+		t.Fatalf("linked build was not preserved: %#v", team.Members[0])
+	}
+	_, err = manager.Save(ctx, domain.Team{
+		Name: "Invalid link", GameVersion: "3.6.1",
+		Members: []domain.TeamMember{
+			{CharacterID: 1},
+			{CharacterID: 2, BuildID: &build.ID},
+			{CharacterID: 3},
+		},
+	})
+	if err == nil {
+		t.Fatal("expected a build from another character to be rejected")
 	}
 	copy, err := manager.Duplicate(ctx, team.ID)
 	if err != nil || copy.ID == team.ID || copy.Name != "Spectro coordinated — cópia" {

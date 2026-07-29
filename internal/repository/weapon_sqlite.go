@@ -32,11 +32,44 @@ func (r *WeaponSQLite) List(ctx context.Context, filter domain.WeaponFilter) ([]
 		where = append(where, "w.rarity = ?")
 		args = append(args, filter.Rarity)
 	}
+	if filter.SubStat != "" {
+		where = append(where, "LOWER(w.sub_stat) LIKE LOWER(?)")
+		args = append(args, "%"+filter.SubStat+"%")
+	}
+	if filter.Account == "owned" {
+		where = append(where, "COALESCE(ow.owned, 0) = 1")
+	} else if filter.Account == "missing" {
+		where = append(where, "COALESCE(ow.owned, 0) = 0")
+	}
 	if filter.OwnedOnly {
 		where = append(where, "COALESCE(ow.owned, 0) = 1")
 	}
 	if filter.Favorites {
 		where = append(where, "COALESCE(ow.favorite, 0) = 1")
+	}
+	if filter.MinATK > 0 {
+		where = append(where, "w.base_atk >= ?")
+		args = append(args, filter.MinATK)
+	}
+	if filter.MaxATK > 0 {
+		where = append(where, "w.base_atk <= ?")
+		args = append(args, filter.MaxATK)
+	}
+	if filter.MinLevel > 0 {
+		where = append(where, "COALESCE(ow.level, 1) >= ?")
+		args = append(args, filter.MinLevel)
+	}
+	if filter.MaxLevel > 0 {
+		where = append(where, "COALESCE(ow.level, 1) <= ?")
+		args = append(args, filter.MaxLevel)
+	}
+	if filter.MinRank > 0 {
+		where = append(where, "COALESCE(ow.weapon_rank, 1) >= ?")
+		args = append(args, filter.MinRank)
+	}
+	if filter.MaxRank > 0 {
+		where = append(where, "COALESCE(ow.weapon_rank, 1) <= ?")
+		args = append(args, filter.MaxRank)
 	}
 	order := "w.name COLLATE NOCASE"
 	switch filter.Sort {

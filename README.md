@@ -10,7 +10,8 @@ computador do usuário.
 ## Funcionalidades
 
 - catálogo de personagens, armas, Echoes e Sonata Effects;
-- busca, filtros, favoritos e ordenação original da API;
+- pesquisa global com `Ctrl+K`, filtros avançados, favoritos e ordenação
+  original da API;
 - perfil completo do personagem com kit, árvore, sequências, materiais,
   atributos e lore;
 - compositor de builds com personagem, arma e até cinco Echoes;
@@ -19,7 +20,8 @@ computador do usuário.
 - conta local, importação, exportação e backups;
 - calculadora determinística e dados de inimigos;
 - assistente contextual com Ollama, LM Studio e Gemini;
-- sincronização e cache local dos dados e imagens.
+- sincronização com cache HTTP condicional (ETag/Last-Modified), fallback
+  offline e cache local de dados e imagens;
 - seleção de fonte entre Nanoka (Live 3.5 ou Latest 3.6.1) e Arikatsu Data
   (branches 3.5, 3.4 e 3.3).
 
@@ -93,6 +95,7 @@ Por padrão, o WaveArchive mantém seus arquivos em:
 ├── wavearchive.db
 ├── assets\
 ├── backups\
+├── http-cache\
 └── snapshots\
 ```
 

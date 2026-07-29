@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import {
   BookOpen,
+  Box,
   Check,
   ChevronRight,
   Copy,
-  Filter,
+  ExternalLink,
   Globe2,
+  Link2,
   ListFilter,
   Plus,
   RotateCcw,
   Save,
   Search,
+  Sparkles,
   Star,
   Trash2,
+  Unlink,
   UserRound,
   UsersRound,
   X,
@@ -22,12 +26,17 @@ import {
   duplicateTeam,
   getCharacter,
   listAllCharacterGuides,
+  listBuilds,
   listCharacters,
   listTeams,
   restoreTeam,
   saveTeam,
 } from './lib/backend';
-import type { Character, CharacterGuide, CharacterProfile, Team, TeamMember } from './types';
+import { readOpenTarget } from './lib/navigation';
+import { useContextualShortcuts } from './lib/contextualShortcuts';
+import { buildOfficialTeamSynergy, type OfficialSynergyItem } from './lib/teamSynergy';
+import { LibraryFilterBar } from './LibraryFilterBar';
+import type { Build, Character, CharacterGuide, CharacterProfile, Team, TeamMember } from './types';
 
 type SourceTab = 'teams' | 'presets';
 type TeamPreset = {
@@ -51,30 +60,34 @@ const elements = [
 export function TeamsPage({
   version,
   onError,
+  onOpenBuild,
 }: {
   version: string;
   onError: (message: string) => void;
+  onOpenBuild: (build: Build) => void;
 }) {
   const [teams, setTeams] = useState<Team[]>([]);
+  const [builds, setBuilds] = useState<Build[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [guides, setGuides] = useState<CharacterGuide[]>([]);
   const [draft, setDraft] = useState<Team>(() => emptyTeam(version));
   const [activeSlot, setActiveSlot] = useState(0);
-  const [profile, setProfile] = useState<CharacterProfile>();
+  const [profiles, setProfiles] = useState<Map<number, CharacterProfile>>(new Map());
   const [sourceTab, setSourceTab] = useState<SourceTab>('teams');
   const [sourceQuery, setSourceQuery] = useState('');
   const [characterQuery, setCharacterQuery] = useState('');
   const [element, setElement] = useState(0);
   const [rarity, setRarity] = useState(0);
-  const [ownedOnly, setOwnedOnly] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [weaponType, setWeaponType] = useState(0);
+  const [account, setAccount] = useState<'all' | 'owned' | 'missing'>('all');
   const [sort, setSort] = useState<'api' | 'name' | 'rarity' | 'level'>('api');
   const [deletedID, setDeletedID] = useState<number>();
   const [saving, setSaving] = useState(false);
 
   async function load(selectFirst = false) {
     try {
-      const [nextTeams, nextCharacters, nextGuides] = await Promise.all([
+      const [nextTeams, nextCharacters, nextGuides, nextBuilds] = await Promise.all([
         listTeams(),
         listCharacters({
           query: '',
@@ -85,11 +98,16 @@ export function TeamsPage({
           sort: 'api',
         }),
         listAllCharacterGuides(),
+        listBuilds(),
       ]);
       setTeams(nextTeams);
       setCharacters(nextCharacters);
       setGuides(nextGuides);
-      if (selectFirst && nextTeams[0]) setDraft(cloneTeam(nextTeams[0]));
+      setBuilds(nextBuilds);
+      const target = readOpenTarget('team');
+      const selected = target ? nextTeams.find((item) => item.id === target.id) : undefined;
+      if (selected) setDraft(cloneTeam(selected));
+      else if (selectFirst && nextTeams[0]) setDraft(cloneTeam(nextTeams[0]));
       onError('');
     } catch (cause) {
       onError(messageFrom(cause));
@@ -101,20 +119,38 @@ export function TeamsPage({
   }, []);
 
   useEffect(() => {
-    const characterID = draft.members[activeSlot]?.characterId;
-    if (!characterID) {
-      setProfile(undefined);
+    const characterIDs = [
+      ...new Set(draft.members.map((member) => member.characterId).filter(Boolean)),
+    ];
+    if (!characterIDs.length) {
+      setProfiles(new Map());
       return;
     }
-    void getCharacter(characterID)
-      .then(setProfile)
-      .catch(() => setProfile(undefined));
-  }, [draft.members, activeSlot]);
+    let cancelled = false;
+    void Promise.all(
+      characterIDs.map((characterID) =>
+        getCharacter(characterID)
+          .then((item) => [characterID, item] as const)
+          .catch(() => undefined)
+      )
+    ).then((items) => {
+      if (cancelled) return;
+      setProfiles(
+        new Map(
+          items.filter((item): item is readonly [number, CharacterProfile] => item !== undefined)
+        )
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.members]);
 
   const characterMap = useMemo(
     () => new Map(characters.map((character) => [character.id, character])),
     [characters]
   );
+  const buildMap = useMemo(() => new Map(builds.map((build) => [build.id, build])), [builds]);
 
   const selectedCharacterIDs = useMemo(
     () => new Set(draft.members.map((member) => member.characterId).filter(Boolean)),
@@ -150,7 +186,8 @@ export function TeamsPage({
         (!query || `${character.name} ${character.nickname}`.toLocaleLowerCase().includes(query)) &&
         (!element || character.elementCode === element) &&
         (!rarity || character.rarity === rarity) &&
-        (!ownedOnly || character.owned) &&
+        (!weaponType || character.weaponTypeCode === weaponType) &&
+        (account === 'all' || (account === 'owned' ? character.owned : !character.owned)) &&
         (!favoritesOnly || character.favorite || selectedCharacterIDs.has(character.id))
       );
     });
@@ -163,15 +200,36 @@ export function TeamsPage({
       return left.apiOrder - right.apiOrder;
     });
   }, [
+    account,
     characterQuery,
     characters,
     element,
-    rarity,
-    ownedOnly,
     favoritesOnly,
+    rarity,
     selectedCharacterIDs,
     sort,
+    weaponType,
   ]);
+
+  const characterFiltersActive = Boolean(
+    characterQuery ||
+    element ||
+    rarity ||
+    weaponType ||
+    account !== 'all' ||
+    favoritesOnly ||
+    sort !== 'api'
+  );
+
+  function resetCharacterFilters() {
+    setCharacterQuery('');
+    setElement(0);
+    setRarity(0);
+    setWeaponType(0);
+    setAccount('all');
+    setFavoritesOnly(false);
+    setSort('api');
+  }
 
   const filteredTeams = useMemo(() => {
     const query = sourceQuery.trim().toLocaleLowerCase();
@@ -216,6 +274,23 @@ export function TeamsPage({
     setActiveSlot(index);
   }
 
+  function linkBuild(buildID: number | undefined) {
+    const current = draft.members[activeSlot];
+    if (!current?.characterId) return;
+    const build = buildID ? buildMap.get(buildID) : undefined;
+    if (build && build.characterId !== current.characterId) return;
+    const members = draft.members.map((member, index) =>
+      index === activeSlot
+        ? {
+            ...member,
+            buildId: build?.id,
+            buildName: build?.name || '',
+          }
+        : member
+    );
+    setDraft({ ...draft, members });
+  }
+
   function applyPreset(preset: TeamPreset) {
     setDraft({
       ...emptyTeam(version),
@@ -226,16 +301,18 @@ export function TeamsPage({
     setActiveSlot(0);
   }
 
-  async function submit() {
-    if (!canSave(draft)) return;
+  async function submit(): Promise<boolean> {
+    if (!canSave(draft)) return false;
     setSaving(true);
     try {
       const saved = await saveTeam(draft);
       setDraft(cloneTeam(saved));
       await load();
       onError('');
+      return true;
     } catch (cause) {
       onError(messageFrom(cause));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -264,10 +341,33 @@ export function TeamsPage({
   }
 
   const activeCharacter = characterMap.get(draft.members[activeSlot]?.characterId);
+  const profile = activeCharacter ? profiles.get(activeCharacter.id) : undefined;
+  const activeMember = draft.members[activeSlot];
+  const activeBuild = activeMember?.buildId ? buildMap.get(activeMember.buildId) : undefined;
+  const compatibleBuilds = activeCharacter
+    ? builds.filter((build) => build.characterId === activeCharacter.id)
+    : [];
+  const linkedBuildUnavailable = Boolean(activeMember?.buildId && !activeBuild);
+  const teamSynergy = useMemo(
+    () => buildOfficialTeamSynergy(draft.members, profiles),
+    [draft.members, profiles]
+  );
+  const shortcutFeedback = useContextualShortcuts({
+    canSave: canSave(draft) && !saving,
+    onNew: create,
+    onSave: submit,
+    newMessage: 'Nova equipe criada.',
+    savedMessage: 'Equipe salva.',
+    invalidMessage: 'Adicione pelo menos um personagem antes de salvar.',
+  });
 
   return (
     <div className="teamWorkspace">
       <aside className="teamSources" aria-label="Equipes e presets">
+        <button className="newTeamButton" onClick={create}>
+          <Plus size={16} />
+          Nova equipe
+        </button>
         <div className="sourceTabs" role="tablist">
           <button
             role="tab"
@@ -386,10 +486,6 @@ export function TeamsPage({
             </div>
           )}
         </div>
-        <button className="newTeamButton" onClick={create}>
-          <Plus size={16} />
-          Nova equipe
-        </button>
       </aside>
 
       <section className="teamComposer">
@@ -414,6 +510,12 @@ export function TeamsPage({
                 className={`teamStageSlot element-${character?.elementCode || 0}${activeSlot === index ? ' active' : ''}`}
                 key={index}
                 onClick={() => setActiveSlot(index)}
+                onContextMenu={(event) => {
+                  if (!character) return;
+                  event.preventDefault();
+                  removeMember(index);
+                }}
+                title={character ? 'Clique direito para remover do slot' : undefined}
               >
                 <span className="slotNumber">{String(index + 1).padStart(2, '0')}</span>
                 {character ? (
@@ -430,6 +532,18 @@ export function TeamsPage({
                       <span className="rarityStars" aria-label={`${character.rarity} estrelas`}>
                         {'★'.repeat(character.rarity)}
                       </span>
+                      {member.buildId && (
+                        <span
+                          className={
+                            buildMap.has(member.buildId)
+                              ? 'slotBuildBadge'
+                              : 'slotBuildBadge unavailable'
+                          }
+                        >
+                          <Link2 size={12} />
+                          {buildMap.get(member.buildId)?.name || 'Build indisponível'}
+                        </span>
+                      )}
                     </span>
                     <span className="selectedMark">
                       <Check size={15} />
@@ -447,6 +561,16 @@ export function TeamsPage({
             );
           })}
         </div>
+
+        <TeamSynergySummary
+          items={teamSynergy}
+          selectedCount={draft.members.filter((member) => member.characterId).length}
+          version={version}
+          onSelectMember={(name) => {
+            const index = draft.members.findIndex((member) => member.characterName === name);
+            if (index >= 0) setActiveSlot(index);
+          }}
+        />
 
         <div className="composerActions">
           <div></div>
@@ -482,6 +606,98 @@ export function TeamsPage({
               </span>
               <span>{activeCharacter.weaponType}</span>
             </div>
+            <section className="teamBuildLink" aria-label="Build vinculada ao slot">
+              <header>
+                <div>
+                  <span className="sectionLabel">BUILD DO SLOT</span>
+                  <strong>
+                    {compatibleBuilds.length}{' '}
+                    {compatibleBuilds.length === 1 ? 'compatível' : 'compatíveis'}
+                  </strong>
+                </div>
+              </header>
+              <label>
+                <span>Build de {activeCharacter.name}</span>
+                <select
+                  aria-label={`Build de ${activeCharacter.name}`}
+                  value={activeMember?.buildId || ''}
+                  onChange={(event) =>
+                    linkBuild(event.target.value ? Number(event.target.value) : undefined)
+                  }
+                >
+                  <option value="">Sem Build vinculada</option>
+                  {linkedBuildUnavailable && activeMember?.buildId && (
+                    <option value={activeMember.buildId}>Build indisponível</option>
+                  )}
+                  {compatibleBuilds.map((build) => (
+                    <option value={build.id} key={build.id}>
+                      {build.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {activeBuild ? (
+                <article className="linkedBuildCard">
+                  <div className="linkedBuildIdentity">
+                    <span>
+                      <Link2 size={15} />
+                    </span>
+                    <div>
+                      <strong>{activeBuild.name}</strong>
+                      <small>{activeBuild.weaponName || 'Sem arma definida'}</small>
+                    </div>
+                  </div>
+                  <div className="linkedBuildMetrics">
+                    <span>
+                      <small>CUSTO</small>
+                      <strong>{buildEchoCost(activeBuild)}/12</strong>
+                    </span>
+                    <span>
+                      <small>ECHOES</small>
+                      <strong>{activeBuild.echoes.length}/5</strong>
+                    </span>
+                  </div>
+                  {buildSonatas(activeBuild).length > 0 && (
+                    <div className="linkedBuildSonatas" aria-label="Sonatas da Build">
+                      {buildSonatas(activeBuild).map((sonata) => (
+                        <span key={sonata}>{sonata}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="linkedBuildActions">
+                    <button type="button" onClick={() => onOpenBuild(activeBuild)}>
+                      <ExternalLink size={14} />
+                      Abrir Build
+                    </button>
+                    <button type="button" onClick={() => linkBuild(undefined)}>
+                      <Unlink size={14} />
+                      Desvincular
+                    </button>
+                  </div>
+                </article>
+              ) : linkedBuildUnavailable ? (
+                <div className="linkedBuildUnavailable" role="status">
+                  <Box size={18} />
+                  <div>
+                    <strong>Build indisponível</strong>
+                    <small>
+                      O personagem foi preservado. Escolha outra Build compatível ou remova o
+                      vínculo.
+                    </small>
+                  </div>
+                  <button type="button" onClick={() => linkBuild(undefined)}>
+                    <Unlink size={14} />
+                    Remover vínculo
+                  </button>
+                </div>
+              ) : compatibleBuilds.length === 0 ? (
+                <div className="teamBuildEmpty">
+                  <Box size={18} />
+                  <span>Nenhuma Build salva para {activeCharacter.name}.</span>
+                </div>
+              ) : null}
+            </section>
             <section className="apiTags">
               <header>
                 <div>
@@ -519,7 +735,9 @@ export function TeamsPage({
             <div className="inspectorActions">
               <button
                 onClick={() =>
-                  document.querySelector<HTMLInputElement>('.characterLibrarySearch input')?.focus()
+                  document
+                    .querySelector<HTMLInputElement>('.characterLibrary .catalogFilterSearch input')
+                    ?.focus()
                 }
               >
                 <RotateCcw size={16} />
@@ -541,92 +759,92 @@ export function TeamsPage({
       </aside>
 
       <section className="characterLibrary">
-        <div className="libraryFilters">
-          <label className="characterLibrarySearch">
-            <Search size={17} />
-            <span className="srOnly">Buscar personagem</span>
-            <input
-              value={characterQuery}
-              onChange={(event) => setCharacterQuery(event.target.value)}
-              placeholder="Buscar personagem…"
-            />
-          </label>
-          <div className="compactFilters">
-            <div className="filterSelects">
-              <Filter size={15} />
-              <select
-                aria-label="Filtrar por elemento"
-                value={element}
-                onChange={(event) => setElement(Number(event.target.value))}
-              >
-                {elements.map(([value, label]) => (
-                  <option value={value} key={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Filtrar por raridade"
-                value={rarity}
-                onChange={(event) => setRarity(Number(event.target.value))}
-              >
-                <option value={0}>Todas raridades</option>
-                <option value={5}>5 Estrelas</option>
-                <option value={4}>4 Estrelas</option>
-              </select>
-              <select
-                aria-label="Ordenar personagens"
-                value={sort}
-                onChange={(event) => setSort(event.target.value as any)}
-              >
-                <option value="api">Lançamento</option>
-                <option value="name">Nome A–Z</option>
-                <option value="rarity">Maior raridade</option>
-                <option value="level">Nível na conta</option>
-              </select>
-            </div>
-            <div className="filterChips">
-              <button
-                type="button"
-                className={ownedOnly ? 'filterChip active' : 'filterChip'}
-                onClick={() => setOwnedOnly(!ownedOnly)}
-              >
-                <UserRound size={13} />
-                <span>Possuídos</span>
-              </button>
-              <button
-                type="button"
-                className={favoritesOnly ? 'filterChip active' : 'filterChip'}
-                onClick={() => setFavoritesOnly(!favoritesOnly)}
-              >
-                <Star size={13} fill={favoritesOnly ? 'currentColor' : 'none'} />
-                <span>Favoritos</span>
-              </button>
-              {(characterQuery ||
-                element !== 0 ||
-                rarity !== 0 ||
-                ownedOnly ||
-                favoritesOnly ||
-                sort !== 'api') && (
+        <LibraryFilterBar
+          title="Encontrar personagem"
+          resultLabel={`${filteredCharacters.length} de ${characters.length}`}
+          query={characterQuery}
+          placeholder="Buscar por nome ou apelido…"
+          sortValue={sort}
+          sortLabel="Ordenar personagens"
+          sortOptions={[
+            { value: 'api', label: 'Lançamento' },
+            { value: 'name', label: 'Nome A–Z' },
+            { value: 'rarity', label: 'Maior raridade' },
+            { value: 'level', label: 'Nível na conta' },
+          ]}
+          active={characterFiltersActive}
+          onQueryChange={setCharacterQuery}
+          onSortChange={(value) => setSort(value as typeof sort)}
+          onReset={resetCharacterFilters}
+        >
+          <div className="catalogFacet catalogFacetWide">
+            <span>Atributo</span>
+            <div className="catalogChipRail">
+              {elements.map(([value, label]) => (
                 <button
                   type="button"
-                  className="filterReset"
-                  onClick={() => {
-                    setCharacterQuery('');
-                    setElement(0);
-                    setRarity(0);
-                    setOwnedOnly(false);
-                    setFavoritesOnly(false);
-                    setSort('api');
-                  }}
-                  title="Limpar filtros"
+                  className={
+                    element === value
+                      ? `catalogChip active element-${value}`
+                      : `catalogChip element-${value}`
+                  }
+                  onClick={() => setElement(value)}
+                  key={value}
                 >
-                  <X size={13} />
+                  {value > 0 && <i />}
+                  {label}
                 </button>
-              )}
+              ))}
             </div>
           </div>
-        </div>
+          <div className="catalogFacet">
+            <span>Raridade</span>
+            <div className="catalogChipRail">
+              {[
+                { value: 0, label: 'Todas' },
+                { value: 5, label: '5★' },
+                { value: 4, label: '4★' },
+              ].map((item) => (
+                <button
+                  type="button"
+                  className={rarity === item.value ? 'catalogChip active' : 'catalogChip'}
+                  onClick={() => setRarity(item.value)}
+                  key={item.value}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="catalogFacet">
+            <span>Conta</span>
+            <div className="catalogChipRail">
+              {[
+                { value: 'all', label: 'Todos' },
+                { value: 'owned', label: 'Possuídos' },
+                { value: 'missing', label: 'Não possuídos' },
+              ].map((item) => (
+                <button
+                  type="button"
+                  className={account === item.value ? 'catalogChip active' : 'catalogChip'}
+                  onClick={() => setAccount(item.value as typeof account)}
+                  key={item.value}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            type="button"
+            className={favoritesOnly ? 'catalogToggle active' : 'catalogToggle'}
+            onClick={() => setFavoritesOnly((current) => !current)}
+            aria-pressed={favoritesOnly}
+          >
+            <Star size={14} fill={favoritesOnly ? 'currentColor' : 'none'} />
+            Somente favoritos
+          </button>
+        </LibraryFilterBar>
         <div className="characterFilmstrip">
           {filteredCharacters.map((character) => {
             const used = draft.members.some((member) => member.characterId === character.id);
@@ -655,6 +873,13 @@ export function TeamsPage({
         </div>
       </section>
 
+      {shortcutFeedback && (
+        <div className={`shortcutToast ${shortcutFeedback.tone}`} role="status" aria-live="polite">
+          <kbd>{shortcutFeedback.message.includes('Nova') ? 'Ctrl+N' : 'Ctrl+S'}</kbd>
+          {shortcutFeedback.message}
+        </div>
+      )}
+
       {deletedID && (
         <div className="undoToast">
           Equipe excluída.<button onClick={() => void undo()}>Desfazer</button>
@@ -662,6 +887,121 @@ export function TeamsPage({
             <X size={15} />
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+function TeamSynergySummary({
+  items,
+  selectedCount,
+  version,
+  onSelectMember,
+}: {
+  items: OfficialSynergyItem[];
+  selectedCount: number;
+  version: string;
+  onSelectMember: (name: string) => void;
+}) {
+  const shared = items.filter((item) => item.members.length > 1);
+  const individual = items.filter((item) => item.members.length === 1);
+  return (
+    <section className="teamSynergy" aria-labelledby="team-synergy-title">
+      <header>
+        <div>
+          <span className="sectionLabel">SINERGIA OFICIAL</span>
+          <h3 id="team-synergy-title">Funções da composição</h3>
+        </div>
+        <small>Tags da API · Dados {version || 'sincronizados'}</small>
+      </header>
+      {selectedCount < 3 ? (
+        <p className="teamSynergyEmpty">
+          Complete os três slots para consolidar as funções oficiais da equipe.
+        </p>
+      ) : items.length === 0 ? (
+        <p className="teamSynergyEmpty">
+          A fonte sincronizada não forneceu tags oficiais para esta composição.
+        </p>
+      ) : (
+        <div className="teamSynergyGroups">
+          <SynergyGroup
+            title="Funções compartilhadas"
+            items={shared}
+            empty="Nenhuma função oficial aparece em mais de um personagem."
+            onSelectMember={onSelectMember}
+            variant="shared"
+          />
+          <SynergyGroup
+            title="Funções individuais"
+            items={individual}
+            empty="Todas as funções oficiais desta composição são compartilhadas."
+            onSelectMember={onSelectMember}
+            variant="individual"
+          />
+        </div>
+      )}
+      <footer>
+        <Sparkles size={13} />
+        Consolidação determinística; nenhuma pontuação ou recomendação foi gerada.
+      </footer>
+    </section>
+  );
+}
+
+function SynergyGroup({
+  title,
+  items,
+  empty,
+  onSelectMember,
+  variant,
+}: {
+  title: string;
+  items: OfficialSynergyItem[];
+  empty: string;
+  onSelectMember: (name: string) => void;
+  variant: 'shared' | 'individual';
+}) {
+  return (
+    <div className={`teamSynergyGroup ${variant}`}>
+      <header>
+        <strong>{title}</strong>
+        <small>{items.length}</small>
+      </header>
+      {items.length ? (
+        <div>
+          {items.map((item) => (
+            <article
+              key={item.key}
+              style={
+                {
+                  '--synergy-color': item.tag.color
+                    ? `#${item.tag.color.replace('#', '')}`
+                    : undefined,
+                } as CSSProperties
+              }
+            >
+              {item.tag.iconPath?.startsWith('/cache/') ? (
+                <img src={item.tag.iconPath} alt="" />
+              ) : (
+                <span />
+              )}
+              <div>
+                <strong>{item.tag.name}</strong>
+                {item.tag.description && <p>{item.tag.description}</p>}
+                <small className="synergySources">
+                  Fonte:
+                  {item.members.map((member) => (
+                    <button type="button" onClick={() => onSelectMember(member)} key={member}>
+                      {member}
+                    </button>
+                  ))}
+                </small>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p>{empty}</p>
       )}
     </div>
   );
@@ -769,4 +1109,19 @@ function initials(value: string) {
 
 function messageFrom(cause: unknown) {
   return cause instanceof Error ? cause.message : String(cause);
+}
+
+function buildEchoCost(build: Build) {
+  return build.echoes.reduce((total, echo) => total + echo.cost, 0);
+}
+
+function buildSonatas(build: Build) {
+  const counts = new Map<string, number>();
+  build.echoes.forEach((echo) => {
+    if (!echo.sonataName) return;
+    counts.set(echo.sonataName, (counts.get(echo.sonataName) || 0) + 1);
+  });
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([name, count]) => `${name} · ${count}`);
 }

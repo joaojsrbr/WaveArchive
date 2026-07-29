@@ -1,7 +1,5 @@
 package domain
 
-import "time"
-
 type Element int
 
 const (
@@ -255,6 +253,14 @@ type WeaponFilter struct {
 	Query     string `json:"query"`
 	Type      int    `json:"type"`
 	Rarity    int    `json:"rarity"`
+	SubStat   string `json:"subStat"`
+	Account   string `json:"account"`
+	MinATK    int    `json:"minAtk"`
+	MaxATK    int    `json:"maxAtk"`
+	MinLevel  int    `json:"minLevel"`
+	MaxLevel  int    `json:"maxLevel"`
+	MinRank   int    `json:"minRank"`
+	MaxRank   int    `json:"maxRank"`
 	OwnedOnly bool   `json:"ownedOnly"`
 	Favorites bool   `json:"favorites"`
 	Sort      string `json:"sort"`
@@ -269,22 +275,29 @@ type WeaponAccountUpdate struct {
 }
 
 type CharacterFilter struct {
-	Query     string `json:"query"`
-	Element   int    `json:"element"`
-	Rarity    int    `json:"rarity"`
-	OwnedOnly bool   `json:"ownedOnly"`
-	Favorites bool   `json:"favorites"`
-	Sort      string `json:"sort"`
+	Query       string `json:"query"`
+	Element     int    `json:"element"`
+	Rarity      int    `json:"rarity"`
+	WeaponType  int    `json:"weaponType"`
+	Gender      string `json:"gender"`
+	Account     string `json:"account"`
+	MinLevel    int    `json:"minLevel"`
+	MaxLevel    int    `json:"maxLevel"`
+	MinSequence int    `json:"minSequence"`
+	MaxSequence int    `json:"maxSequence"`
+	OwnedOnly   bool   `json:"ownedOnly"`
+	Favorites   bool   `json:"favorites"`
+	Sort        string `json:"sort"`
 }
 
 type CatalogStatus struct {
-	Count      int        `json:"count"`
-	Version    string     `json:"version"`
-	LastSyncAt *time.Time `json:"lastSyncAt"`
+	Count      int    `json:"count"`
+	Version    string `json:"version"`
+	LastSyncAt string `json:"lastSyncAt,omitempty"`
 }
 
 type SyncResult struct {
-	Version string    `json:"version"`
-	Count   int       `json:"count"`
-	Synced  time.Time `json:"syncedAt"`
+	Version string `json:"version"`
+	Count   int    `json:"count"`
+	Synced  string `json:"syncedAt"`
 }

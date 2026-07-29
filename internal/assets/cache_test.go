@@ -19,6 +19,17 @@ func TestImageURL(t *testing.T) {
 	}
 }
 
+func TestImageURLSupportsNanokaSkillIcons(t *testing.T) {
+	got, err := ImageURL("/Game/Aki/UI/UIResources/Common/Atlas/SkillIcon/SkillIconLuokeke/SP_IconLuokekeC1.SP_IconLuokekeC1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "https://static.nanoka.cc/assets/ww/UIResources/Common/Atlas/SkillIcon/SkillIconLuokeke/SP_IconLuokekeC1.webp"
+	if got != want {
+		t.Fatalf("ImageURL() = %q, want %q", got, want)
+	}
+}
+
 func TestHandlerOnlyServesCacheRoot(t *testing.T) {
 	cache := NewCache(filepath.Join(t.TempDir(), "assets"), nil)
 	request := httptest.NewRequest(http.MethodGet, "/not-cache/file.webp", nil)

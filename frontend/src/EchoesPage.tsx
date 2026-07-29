@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   deleteOwnedEcho,
   getEcho,
@@ -8,12 +8,20 @@ import {
   saveOwnedEcho,
 } from './lib/backend';
 import type { Echo, EchoFilter, OwnedEcho, Sonata } from './types';
+import { AdvancedFilters, FilterField } from './AdvancedFilters';
+import { readOpenTarget } from './lib/navigation';
 
 const initialFilter: EchoFilter = {
   query: '',
   cost: 0,
   sonataId: 0,
+  class: '',
+  type: '',
+  place: '',
+  rarity: 0,
+  minOwned: 0,
   ownedOnly: false,
+  favorites: false,
   sort: 'name',
 };
 
@@ -32,6 +40,7 @@ export function EchoesPage({
   const [detail, setDetail] = useState<Echo>();
   const [draft, setDraft] = useState<OwnedEcho>();
   const [loading, setLoading] = useState(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   async function load(nextFilter = filter) {
     setLoading(true);
@@ -55,7 +64,35 @@ export function EchoesPage({
   useEffect(() => {
     const timer = window.setTimeout(() => void load(filter), 150);
     return () => window.clearTimeout(timer);
-  }, [filter.query, filter.cost, filter.sonataId, filter.ownedOnly, filter.sort]);
+  }, [filter]);
+
+  useEffect(() => {
+    const target = readOpenTarget(mode === 'sonata' ? 'sonata' : 'echo');
+    if (target && mode === 'echoes') void openEcho(target.id);
+    if (target && mode === 'sonata')
+      setFilter((current) => ({ ...current, query: target.title || '' }));
+  }, []);
+
+  const echoClasses = useMemo(
+    () => [...new Set(echoes.map((echo) => echo.class).filter(Boolean))].sort(),
+    [echoes]
+  );
+  const echoTypes = useMemo(
+    () => [...new Set(echoes.map((echo) => echo.type).filter(Boolean))].sort(),
+    [echoes]
+  );
+  const visibleSonatas = useMemo(() => {
+    const query = filter.query.trim().toLocaleLowerCase('pt-BR');
+    return sonatas
+      .filter(
+        (item) =>
+          !query ||
+          `${item.name} ${item.twoPiece} ${item.fivePiece}`
+            .toLocaleLowerCase('pt-BR')
+            .includes(query)
+      )
+      .sort((left, right) => left.name.localeCompare(right.name));
+  }, [filter.query, sonatas]);
 
   async function openEcho(id: number) {
     try {
@@ -118,11 +155,22 @@ export function EchoesPage({
             <p>Consulte bônus de duas e cinco peças disponíveis na versão sincronizada.</p>
           </div>
         </div>
+        <div className="toolbar">
+          <label className="search">
+            <span aria-hidden="true">⌕</span>
+            <span className="srOnly">Pesquisar Sonata Effects</span>
+            <input
+              value={filter.query}
+              onChange={(event) => setFilter({ ...filter, query: event.target.value })}
+              placeholder="Buscar Sonata ou efeito..."
+            />
+          </label>
+        </div>
         {loading ? (
           <Loading />
         ) : (
           <div className="sonataGrid">
-            {sonatas.map((set) => (
+            {visibleSonatas.map((set) => (
               <article className="sonataCard" key={set.id}>
                 <div className="sonataTitle">
                   {image(set.iconPath, set.name)}
@@ -217,6 +265,101 @@ export function EchoesPage({
           ))}
         </select>
       </div>
+      <AdvancedFilters
+        open={advancedOpen}
+        activeCount={echoAdvancedCount(filter)}
+        onToggle={() => setAdvancedOpen((current) => !current)}
+        onReset={() =>
+          setFilter({
+            ...filter,
+            class: '',
+            type: '',
+            place: '',
+            rarity: 0,
+            minOwned: 0,
+            ownedOnly: false,
+            favorites: false,
+          })
+        }
+      >
+        <FilterField label="Classe">
+          <select
+            value={filter.class || ''}
+            onChange={(event) => setFilter({ ...filter, class: event.target.value })}
+          >
+            <option value="">Todas as classes</option>
+            {echoClasses.map((value) => (
+              <option value={value} key={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Tipo">
+          <select
+            value={filter.type || ''}
+            onChange={(event) => setFilter({ ...filter, type: event.target.value })}
+          >
+            <option value="">Todos os tipos</option>
+            {echoTypes.map((value) => (
+              <option value={value} key={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Local de obtenção">
+          <input
+            value={filter.place || ''}
+            onChange={(event) => setFilter({ ...filter, place: event.target.value })}
+            placeholder="Buscar região ou atividade..."
+          />
+        </FilterField>
+        <FilterField label="Raridade disponível">
+          <select
+            value={filter.rarity || 0}
+            onChange={(event) => setFilter({ ...filter, rarity: Number(event.target.value) })}
+          >
+            <option value={0}>Todas</option>
+            {[5, 4, 3, 2].map((value) => (
+              <option value={value} key={value}>
+                {value} estrelas
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Quantidade mínima no inventário">
+          <input
+            type="number"
+            min={0}
+            value={filter.minOwned || ''}
+            placeholder="0"
+            onChange={(event) => setFilter({ ...filter, minOwned: Number(event.target.value) })}
+          />
+        </FilterField>
+        <label className="advancedFilterToggle">
+          <input
+            type="checkbox"
+            checked={filter.ownedOnly}
+            onChange={(event) => setFilter({ ...filter, ownedOnly: event.target.checked })}
+          />
+          <span>
+            <strong>Somente registrados</strong>
+            <small>Com ao menos uma peça no inventário</small>
+          </span>
+        </label>
+        <label className="advancedFilterToggle">
+          <input
+            type="checkbox"
+            checked={Boolean(filter.favorites)}
+            onChange={(event) => setFilter({ ...filter, favorites: event.target.checked })}
+          />
+          <span>
+            <strong>Somente favoritos</strong>
+            <small>Peças marcadas na conta</small>
+          </span>
+        </label>
+      </AdvancedFilters>
       {loading ? (
         <Loading />
       ) : tab === 'catalog' ? (
@@ -461,6 +604,19 @@ function firstSonata(echo: Echo) {
     return undefined;
   }
 }
+
+function echoAdvancedCount(filter: EchoFilter) {
+  return [
+    filter.class,
+    filter.type,
+    filter.place,
+    filter.rarity,
+    filter.minOwned,
+    filter.ownedOnly,
+    filter.favorites,
+  ].filter(Boolean).length;
+}
+
 function sonataNames(echo: Echo, sonatas: Sonata[]) {
   try {
     const ids = JSON.parse(echo.sonataIdsJson) as number[];

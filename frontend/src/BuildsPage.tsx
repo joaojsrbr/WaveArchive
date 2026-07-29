@@ -7,7 +7,6 @@ import {
   Plus,
   Save,
   Search,
-  SlidersHorizontal,
   Star,
   Swords,
   Trash2,
@@ -22,18 +21,25 @@ import {
   listBuilds,
   listCharacters,
   listEchoes,
+  listOwnedEchoes,
   listSonatas,
   listWeapons,
   restoreBuild,
   saveBuild,
   saveOwnedEcho,
 } from './lib/backend';
+import { readOpenTarget } from './lib/navigation';
+import { useContextualShortcuts } from './lib/contextualShortcuts';
 import { isRoverCharacter } from './lib/characters';
+import { buildSonataProgress, type SonataProgressItem } from './lib/sonata';
+import { FilterField, FilterRange } from './AdvancedFilters';
+import { LibraryFilterBar } from './LibraryFilterBar';
 import type { Build, Character, Echo, OwnedEcho, Sonata, Weapon } from './types';
 
 type Target = { kind: 'character' } | { kind: 'weapon' } | { kind: 'echo'; slot: number };
 type EchoSubstatChoice = { key: string; label: string; values: readonly string[] };
 type ParsedEchoSubstat = { key: string; value: string };
+type EchoLibrarySource = 'catalog' | 'inventory';
 
 const characterFilter = {
   query: '',
@@ -105,6 +111,7 @@ export function BuildsPage({
   const [characters, setCharacters] = useState<Character[]>([]);
   const [weapons, setWeapons] = useState<Weapon[]>([]);
   const [echoes, setEchoes] = useState<Echo[]>([]);
+  const [ownedEchoes, setOwnedEchoes] = useState<OwnedEcho[]>([]);
   const [sonatas, setSonatas] = useState<Sonata[]>([]);
   const [draft, setDraft] = useState<Build>(() => emptyBuild(version));
   const [target, setTarget] = useState<Target>({ kind: 'character' });
@@ -113,36 +120,47 @@ export function BuildsPage({
   const [costFilter, setCostFilter] = useState(0);
   const [elementFilter, setElementFilter] = useState(0);
   const [rarityFilter, setRarityFilter] = useState(0);
-  const [weaponTypeFilter, setWeaponTypeFilter] = useState(0);
   const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'owned' | 'missing'>('all');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [characterSort, setCharacterSort] = useState<'api' | 'name' | 'rarity' | 'level'>('api');
   const [weaponRarityFilter, setWeaponRarityFilter] = useState(0);
+  const [weaponSubStatFilter, setWeaponSubStatFilter] = useState('');
   const [weaponOwnershipFilter, setWeaponOwnershipFilter] = useState<'all' | 'owned' | 'missing'>(
     'all'
   );
+  const [weaponMinAtk, setWeaponMinAtk] = useState(0);
+  const [weaponMaxAtk, setWeaponMaxAtk] = useState(0);
   const [weaponFavoritesOnly, setWeaponFavoritesOnly] = useState(false);
   const [weaponSort, setWeaponSort] = useState<'rarity' | 'atk' | 'name' | 'api'>('rarity');
   const [sonataFilter, setSonataFilter] = useState(0);
   const [echoClassFilter, setEchoClassFilter] = useState('');
+  const [echoTypeFilter, setEchoTypeFilter] = useState('');
+  const [echoPlaceFilter, setEchoPlaceFilter] = useState('');
+  const [echoRarityFilter, setEchoRarityFilter] = useState(0);
+  const [echoMinOwned, setEchoMinOwned] = useState(0);
+  const [echoFavoritesOnly, setEchoFavoritesOnly] = useState(false);
   const [echoSort, setEchoSort] = useState<'api' | 'name' | 'cost'>('api');
+  const [echoLibrarySource, setEchoLibrarySource] = useState<EchoLibrarySource>('catalog');
   const [signatureWeaponID, setSignatureWeaponID] = useState<number>();
   const [saving, setSaving] = useState(false);
   const [deletedID, setDeletedID] = useState<number>();
 
   async function load(selectID?: number) {
     try {
-      const [nextBuilds, nextCharacters, nextWeapons, nextEchoes, nextSonatas] = await Promise.all([
-        listBuilds(),
-        listCharacters(characterFilter),
-        listWeapons(weaponFilter),
-        listEchoes(echoFilter),
-        listSonatas(),
-      ]);
+      const [nextBuilds, nextCharacters, nextWeapons, nextEchoes, nextOwnedEchoes, nextSonatas] =
+        await Promise.all([
+          listBuilds(),
+          listCharacters(characterFilter),
+          listWeapons(weaponFilter),
+          listEchoes(echoFilter),
+          listOwnedEchoes(),
+          listSonatas(),
+        ]);
       setBuilds(nextBuilds);
       setCharacters(nextCharacters);
       setWeapons(nextWeapons);
       setEchoes(nextEchoes);
+      setOwnedEchoes(nextOwnedEchoes);
       setSonatas(nextSonatas);
       if (selectID) {
         const selected = nextBuilds.find((item) => item.id === selectID);
@@ -155,7 +173,8 @@ export function BuildsPage({
   }
 
   useEffect(() => {
-    void load();
+    const target = readOpenTarget('build');
+    void load(target?.id);
   }, []);
   useEffect(() => {
     let cancelled = false;
@@ -191,7 +210,6 @@ export function BuildsPage({
             (!needle || item.name.toLocaleLowerCase('pt-BR').includes(needle)) &&
             (!elementFilter || item.elementCode === elementFilter) &&
             (!rarityFilter || item.rarity === rarityFilter) &&
-            (!weaponTypeFilter || item.weaponTypeCode === weaponTypeFilter) &&
             (ownershipFilter === 'all' || item.owned === (ownershipFilter === 'owned')) &&
             (!favoritesOnly || item.favorite)
         )
@@ -211,8 +229,11 @@ export function BuildsPage({
             (!character || item.typeCode === character.weaponTypeCode) &&
             (!needle || item.name.toLocaleLowerCase('pt-BR').includes(needle)) &&
             (!weaponRarityFilter || item.rarity === weaponRarityFilter) &&
+            (!weaponSubStatFilter || item.subStat === weaponSubStatFilter) &&
             (weaponOwnershipFilter === 'all' ||
               item.owned === (weaponOwnershipFilter === 'owned')) &&
+            (!weaponMinAtk || item.baseAtk >= weaponMinAtk) &&
+            (!weaponMaxAtk || item.baseAtk <= weaponMaxAtk) &&
             (!weaponFavoritesOnly || item.favorite)
         )
         .sort((left, right) => {
@@ -231,6 +252,11 @@ export function BuildsPage({
           (!costFilter || item.cost === costFilter) &&
           (!sonataFilter || parseIDs(item.sonataIdsJson).includes(sonataFilter)) &&
           (!echoClassFilter || item.class === echoClassFilter) &&
+          (!echoTypeFilter || item.type === echoTypeFilter) &&
+          (!echoPlaceFilter || item.place === echoPlaceFilter) &&
+          (!echoRarityFilter || parseIDs(item.raritiesJson).includes(echoRarityFilter)) &&
+          (!echoMinOwned || item.ownedCount >= echoMinOwned) &&
+          (!echoFavoritesOnly || item.favorite) &&
           (!needle || item.name.toLocaleLowerCase('pt-BR').includes(needle))
       )
       .sort((left, right) => {
@@ -248,28 +274,132 @@ export function BuildsPage({
     character,
     elementFilter,
     rarityFilter,
-    weaponTypeFilter,
     ownershipFilter,
     favoritesOnly,
     characterSort,
     weaponRarityFilter,
+    weaponSubStatFilter,
     weaponOwnershipFilter,
+    weaponMinAtk,
+    weaponMaxAtk,
     weaponFavoritesOnly,
     weaponSort,
     signatureWeaponID,
     sonataFilter,
     echoClassFilter,
+    echoTypeFilter,
+    echoPlaceFilter,
+    echoRarityFilter,
+    echoMinOwned,
+    echoFavoritesOnly,
     echoSort,
   ]);
+  const ownedEchoLibrary = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase('pt-BR');
+    return ownedEchoes
+      .filter(
+        (item) =>
+          (!needle ||
+            `${item.echoName} ${item.mainStat} ${item.sonataName} ${item.note}`
+              .toLocaleLowerCase('pt-BR')
+              .includes(needle)) &&
+          (!costFilter || item.cost === costFilter) &&
+          (!sonataFilter || item.sonataId === sonataFilter) &&
+          (!echoFavoritesOnly || item.favorite)
+      )
+      .sort((left, right) => {
+        if (echoSort === 'name') return left.echoName.localeCompare(right.echoName);
+        if (echoSort === 'cost') return right.cost - left.cost || right.id - left.id;
+        return right.id - left.id;
+      });
+  }, [costFilter, echoFavoritesOnly, echoSort, ownedEchoes, query, sonataFilter]);
+  const activeLibrary =
+    target.kind === 'echo' && echoLibrarySource === 'inventory' ? ownedEchoLibrary : library;
+  const activeLibraryTitle =
+    target.kind === 'echo' && echoLibrarySource === 'inventory'
+      ? 'Echoes do inventário'
+      : libraryTitle(target);
+  const sonataProgress = useMemo(
+    () => buildSonataProgress(draft.echoes, sonatas),
+    [draft.echoes, sonatas]
+  );
   const visibleBuilds = builds.filter(
     (item) =>
       !sourceQuery.trim() ||
       item.name.toLocaleLowerCase('pt-BR').includes(sourceQuery.trim().toLocaleLowerCase('pt-BR'))
   );
-  const characterWeaponTypes = uniqueOptions(
-    characters.map((item) => [item.weaponTypeCode, item.weaponType] as const)
-  );
   const echoClasses = [...new Set(echoes.map((item) => item.class).filter(Boolean))].sort();
+  const echoTypes = [...new Set(echoes.map((item) => item.type).filter(Boolean))].sort();
+  const echoPlaces = [...new Set(echoes.map((item) => item.place).filter(Boolean))].sort();
+  const weaponSubStats = [...new Set(weapons.map((item) => item.subStat).filter(Boolean))].sort();
+
+  const libraryFiltersActive = Boolean(
+    query ||
+    (target.kind === 'character' &&
+      (elementFilter ||
+        rarityFilter ||
+        ownershipFilter !== 'all' ||
+        favoritesOnly ||
+        characterSort !== 'api')) ||
+    (target.kind === 'weapon' &&
+      (weaponRarityFilter ||
+        weaponSubStatFilter ||
+        weaponOwnershipFilter !== 'all' ||
+        weaponFavoritesOnly ||
+        weaponSort !== 'rarity' ||
+        weaponMinAtk ||
+        weaponMaxAtk)) ||
+    (target.kind === 'echo' &&
+      (costFilter ||
+        sonataFilter ||
+        (echoLibrarySource === 'catalog' &&
+          (echoClassFilter ||
+            echoTypeFilter ||
+            echoPlaceFilter ||
+            echoRarityFilter ||
+            echoMinOwned)) ||
+        echoFavoritesOnly ||
+        echoSort !== 'api'))
+  );
+
+  function resetLibraryFilters() {
+    setQuery('');
+    if (target.kind === 'character') {
+      setElementFilter(0);
+      setRarityFilter(0);
+      setOwnershipFilter('all');
+      setFavoritesOnly(false);
+      setCharacterSort('api');
+    } else if (target.kind === 'weapon') {
+      setWeaponRarityFilter(0);
+      setWeaponSubStatFilter('');
+      setWeaponOwnershipFilter('all');
+      setWeaponFavoritesOnly(false);
+      setWeaponSort('rarity');
+      setWeaponMinAtk(0);
+      setWeaponMaxAtk(0);
+    } else {
+      setCostFilter(0);
+      setSonataFilter(0);
+      setEchoClassFilter('');
+      setEchoTypeFilter('');
+      setEchoPlaceFilter('');
+      setEchoRarityFilter(0);
+      setEchoMinOwned(0);
+      setEchoFavoritesOnly(false);
+      setEchoSort('api');
+    }
+  }
+
+  function changeEchoLibrarySource(source: EchoLibrarySource) {
+    setEchoLibrarySource(source);
+    setQuery('');
+    setEchoClassFilter('');
+    setEchoTypeFilter('');
+    setEchoPlaceFilter('');
+    setEchoRarityFilter(0);
+    setEchoMinOwned(0);
+  }
 
   function newBuild() {
     setDraft(emptyBuild(version));
@@ -329,6 +459,29 @@ export function BuildsPage({
     onError('');
   }
 
+  function selectOwnedEcho(item: OwnedEcho) {
+    if (target.kind !== 'echo') return;
+    const usedInSlot = draft.echoes.findIndex(
+      (echo, index) => index !== target.slot && echo.id === item.id
+    );
+    if (usedInSlot >= 0) {
+      onError(`Esta peça já está no slot ${usedInSlot + 1} da build.`);
+      return;
+    }
+    const previous = draft.echoes[target.slot];
+    const nextCost = totalCost - (previous?.cost ?? 0) + item.cost;
+    if (nextCost > 12) {
+      onError(`Este Echo ultrapassa o limite: ${nextCost}/12 de custo.`);
+      return;
+    }
+    const effectiveSlot = previous ? target.slot : Math.min(target.slot, draft.echoes.length);
+    const next = [...draft.echoes];
+    next[effectiveSlot] = { ...item };
+    setDraft({ ...draft, echoes: compactSlots(next) });
+    setTarget({ kind: 'echo', slot: effectiveSlot });
+    onError('');
+  }
+
   function updateEcho(patch: Partial<OwnedEcho>) {
     if (target.kind !== 'echo' || !activeEcho) return;
     const next = [...draft.echoes];
@@ -343,8 +496,8 @@ export function BuildsPage({
     setTarget({ kind: 'echo', slot: Math.min(slot, 4) });
   }
 
-  async function submit() {
-    if (!canSave) return;
+  async function submit(): Promise<boolean> {
+    if (!canSave) return false;
     setSaving(true);
     try {
       const savedEchoes: OwnedEcho[] = [];
@@ -354,8 +507,10 @@ export function BuildsPage({
       const saved = await saveBuild({ ...draft, echoes: savedEchoes, rotationId: undefined });
       await load(saved.id);
       onError('');
+      return true;
     } catch (cause) {
       onError(messageFrom(cause));
+      return false;
     } finally {
       setSaving(false);
     }
@@ -391,6 +546,15 @@ export function BuildsPage({
       onError(messageFrom(cause));
     }
   }
+
+  const shortcutFeedback = useContextualShortcuts({
+    canSave,
+    onNew: newBuild,
+    onSave: submit,
+    newMessage: 'Nova build criada.',
+    savedMessage: 'Build salva.',
+    invalidMessage: 'Selecione um personagem e respeite o limite de custo antes de salvar.',
+  });
 
   return (
     <div className="buildWorkspace">
@@ -597,6 +761,7 @@ export function BuildsPage({
               );
             })}
           </div>
+          <SonataSummary items={sonataProgress} />
         </section>
 
         <footer className="composerActions buildComposerActions">
@@ -653,203 +818,275 @@ export function BuildsPage({
       </aside>
 
       <section className="buildLibrary">
-        <div className="libraryFilters">
-          <div>
-            <span className="sectionLabel">BIBLIOTECA</span>
-            <strong>{libraryTitle(target)}</strong>
-            <small>{library.length} resultados</small>
-          </div>
-          <label className="characterLibrarySearch">
-            <Search size={15} />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={`Buscar ${libraryTitle(target).toLocaleLowerCase('pt-BR')}...`}
-            />
-          </label>
-          <span className="advancedFilterLabel">
-            <SlidersHorizontal size={14} />
-            Filtros avançados
-          </span>
-        </div>
-        <div className="advancedLibraryFilters">
+        <LibraryFilterBar
+          className="buildCatalogFilters"
+          contentClassName="buildFilterGrid"
+          title={activeLibraryTitle}
+          resultLabel={`${activeLibrary.length} resultados`}
+          query={query}
+          placeholder={`Buscar ${activeLibraryTitle.toLocaleLowerCase('pt-BR')}...`}
+          sortValue={
+            target.kind === 'character'
+              ? characterSort
+              : target.kind === 'weapon'
+                ? weaponSort
+                : echoSort
+          }
+          sortLabel={
+            target.kind === 'character'
+              ? 'Ordenar personagens'
+              : target.kind === 'weapon'
+                ? 'Ordenar armas'
+                : 'Ordenar Echoes'
+          }
+          sortOptions={
+            target.kind === 'character'
+              ? [
+                  { value: 'api', label: 'Lançamento' },
+                  { value: 'name', label: 'Nome A–Z' },
+                  { value: 'rarity', label: 'Maior raridade' },
+                  { value: 'level', label: 'Nível na conta' },
+                ]
+              : target.kind === 'weapon'
+                ? [
+                    { value: 'rarity', label: 'Raridade' },
+                    { value: 'atk', label: 'ATK base' },
+                    { value: 'name', label: 'Nome A–Z' },
+                    { value: 'api', label: 'ID da API' },
+                  ]
+                : [
+                    {
+                      value: 'api',
+                      label: echoLibrarySource === 'inventory' ? 'Mais recentes' : 'ID da API',
+                    },
+                    { value: 'name', label: 'Nome A–Z' },
+                    { value: 'cost', label: 'Maior custo' },
+                  ]
+          }
+          active={libraryFiltersActive}
+          onQueryChange={setQuery}
+          onSortChange={(value) => {
+            if (target.kind === 'character') {
+              setCharacterSort(value as typeof characterSort);
+            } else if (target.kind === 'weapon') {
+              setWeaponSort(value as typeof weaponSort);
+            } else {
+              setEchoSort(value as typeof echoSort);
+            }
+          }}
+          onReset={resetLibraryFilters}
+        >
           {target.kind === 'character' && (
             <>
-              <label>
-                Elemento
-                <select
-                  value={elementFilter}
-                  onChange={(event) => setElementFilter(Number(event.target.value))}
-                >
-                  <option value={0}>Todos</option>
+              <div className="catalogFacet catalogFacetWide">
+                <span>Atributo</span>
+                <div className="catalogChipRail">
+                  {(
+                    [
+                      [0, 'Todos'],
+                      [1, 'Glacio'],
+                      [2, 'Fusion'],
+                      [3, 'Electro'],
+                      [4, 'Aero'],
+                      [5, 'Spectro'],
+                      [6, 'Havoc'],
+                    ] as const
+                  ).map(([id, name]) => (
+                    <button
+                      type="button"
+                      className={
+                        elementFilter === id
+                          ? `catalogChip active element-${id}`
+                          : `catalogChip element-${id}`
+                      }
+                      onClick={() => setElementFilter(id)}
+                      key={id}
+                    >
+                      {id > 0 && <i />}
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="catalogFacet">
+                <span>Raridade</span>
+                <div className="catalogChipRail">
                   {[
-                    [1, 'Glacio'],
-                    [2, 'Fusion'],
-                    [3, 'Electro'],
-                    [4, 'Aero'],
-                    [5, 'Spectro'],
-                    [6, 'Havoc'],
-                  ].map(([id, name]) => (
-                    <option value={id} key={id}>
-                      {name}
-                    </option>
+                    { value: 0, label: 'Todas' },
+                    { value: 5, label: '5★' },
+                    { value: 4, label: '4★' },
+                  ].map((item) => (
+                    <button
+                      type="button"
+                      className={rarityFilter === item.value ? 'catalogChip active' : 'catalogChip'}
+                      onClick={() => setRarityFilter(item.value)}
+                      key={item.value}
+                    >
+                      {item.label}
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label>
-                Raridade
-                <select
-                  value={rarityFilter}
-                  onChange={(event) => setRarityFilter(Number(event.target.value))}
-                >
-                  <option value={0}>Todas</option>
-                  <option value={5}>5 estrelas</option>
-                  <option value={4}>4 estrelas</option>
-                </select>
-              </label>
-              <label>
-                Tipo de arma
-                <select
-                  value={weaponTypeFilter}
-                  onChange={(event) => setWeaponTypeFilter(Number(event.target.value))}
-                >
-                  <option value={0}>Todos</option>
-                  {characterWeaponTypes.map(([id, name]) => (
-                    <option value={id} key={id}>
-                      {name}
-                    </option>
+                </div>
+              </div>
+              <div className="catalogFacet">
+                <span>Conta</span>
+                <div className="catalogChipRail">
+                  {(
+                    [
+                      ['all', 'Todos'],
+                      ['owned', 'Possuídos'],
+                      ['missing', 'Não possuídos'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      type="button"
+                      className={ownershipFilter === value ? 'catalogChip active' : 'catalogChip'}
+                      onClick={() => setOwnershipFilter(value)}
+                      key={value}
+                    >
+                      {label}
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label>
-                Conta
-                <select
-                  value={ownershipFilter}
-                  onChange={(event) =>
-                    setOwnershipFilter(event.target.value as typeof ownershipFilter)
-                  }
-                >
-                  <option value="all">Todos</option>
-                  <option value="owned">Possuídos</option>
-                  <option value="missing">Não possuídos</option>
-                </select>
-              </label>
-              <label>
-                Ordenar
-                <select
-                  value={characterSort}
-                  onChange={(event) => setCharacterSort(event.target.value as typeof characterSort)}
-                >
-                  <option value="api">Lançamento</option>
-                  <option value="name">Nome</option>
-                  <option value="rarity">Raridade</option>
-                  <option value="level">Nível</option>
-                </select>
-              </label>
-              <label className="filterCheck">
-                <input
-                  type="checkbox"
-                  checked={favoritesOnly}
-                  onChange={(event) => setFavoritesOnly(event.target.checked)}
-                />
+                </div>
+              </div>
+              <button
+                type="button"
+                className={favoritesOnly ? 'catalogToggle active' : 'catalogToggle'}
+                onClick={() => setFavoritesOnly((current) => !current)}
+                aria-pressed={favoritesOnly}
+              >
+                <Star size={14} fill={favoritesOnly ? 'currentColor' : 'none'} />
                 Somente favoritos
-              </label>
+              </button>
             </>
           )}
           {target.kind === 'weapon' && (
             <>
-              <label>
-                Raridade
+              <div className="catalogFacet">
+                <span>Raridade</span>
+                <div className="catalogChipRail">
+                  {[
+                    { value: 0, label: 'Todas' },
+                    { value: 5, label: '5★' },
+                    { value: 4, label: '4★' },
+                    { value: 3, label: '3★' },
+                  ].map((item) => (
+                    <button
+                      type="button"
+                      className={
+                        weaponRarityFilter === item.value ? 'catalogChip active' : 'catalogChip'
+                      }
+                      onClick={() => setWeaponRarityFilter(item.value)}
+                      key={item.value}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <FilterField label="Subatributo">
                 <select
-                  value={weaponRarityFilter}
-                  onChange={(event) => setWeaponRarityFilter(Number(event.target.value))}
+                  value={weaponSubStatFilter}
+                  onChange={(event) => setWeaponSubStatFilter(event.target.value)}
                 >
-                  <option value={0}>Todas</option>
-                  <option value={5}>5 estrelas</option>
-                  <option value={4}>4 estrelas</option>
-                  <option value={3}>3 estrelas</option>
+                  <option value="">Todos</option>
+                  {weaponSubStats.map((item) => (
+                    <option value={item} key={item}>
+                      {item}
+                    </option>
+                  ))}
                 </select>
-              </label>
-              <label>
-                Conta
-                <select
-                  value={weaponOwnershipFilter}
-                  onChange={(event) =>
-                    setWeaponOwnershipFilter(event.target.value as typeof weaponOwnershipFilter)
-                  }
-                >
-                  <option value="all">Todas</option>
-                  <option value="owned">Possuídas</option>
-                  <option value="missing">Não possuídas</option>
-                </select>
-              </label>
-              <label>
-                Ordenar
-                <select
-                  value={weaponSort}
-                  onChange={(event) => setWeaponSort(event.target.value as typeof weaponSort)}
-                >
-                  <option value="rarity">Raridade</option>
-                  <option value="atk">ATK base</option>
-                  <option value="name">Nome</option>
-                  <option value="api">ID da API</option>
-                </select>
-              </label>
+              </FilterField>
+              <div className="catalogFacet">
+                <span>Conta</span>
+                <div className="catalogChipRail">
+                  {(
+                    [
+                      ['all', 'Todas'],
+                      ['owned', 'Possuídas'],
+                      ['missing', 'Não possuídas'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      type="button"
+                      className={
+                        weaponOwnershipFilter === value ? 'catalogChip active' : 'catalogChip'
+                      }
+                      onClick={() => setWeaponOwnershipFilter(value)}
+                      key={value}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <FilterRange
+                label="ATK base"
+                min={1}
+                max={700}
+                minValue={weaponMinAtk}
+                maxValue={weaponMaxAtk}
+                onMinChange={setWeaponMinAtk}
+                onMaxChange={setWeaponMaxAtk}
+              />
               <span className="signaturePriority">
                 <Star size={13} />
                 {roverSelected
                   ? 'Arma recomendada sempre primeiro'
                   : 'Arma assinatura sempre primeiro'}
               </span>
-              <label className="filterCheck">
-                <input
-                  type="checkbox"
-                  checked={weaponFavoritesOnly}
-                  onChange={(event) => setWeaponFavoritesOnly(event.target.checked)}
-                />
+              <button
+                type="button"
+                className={weaponFavoritesOnly ? 'catalogToggle active' : 'catalogToggle'}
+                onClick={() => setWeaponFavoritesOnly((current) => !current)}
+                aria-pressed={weaponFavoritesOnly}
+              >
+                <Star size={14} fill={weaponFavoritesOnly ? 'currentColor' : 'none'} />
                 Somente favoritas
-              </label>
+              </button>
             </>
           )}
           {target.kind === 'echo' && (
             <>
-              <label>
-                Custo
-                <select
-                  value={costFilter}
-                  onChange={(event) => setCostFilter(Number(event.target.value))}
-                >
-                  <option value={0}>Todos</option>
-                  <option value={1}>Custo 1</option>
-                  <option value={3}>Custo 3</option>
-                  <option value={4}>Custo 4</option>
-                </select>
-              </label>
-              <label>
-                Classe
-                <select
-                  value={echoClassFilter}
-                  onChange={(event) => setEchoClassFilter(event.target.value)}
-                >
-                  <option value="">Todas</option>
-                  {echoClasses.map((item) => (
-                    <option value={item} key={item}>
-                      {item}
-                    </option>
+              <div className="catalogFacet">
+                <span>Origem</span>
+                <div className="catalogChipRail">
+                  {(
+                    [
+                      ['catalog', 'Catálogo'],
+                      ['inventory', 'Inventário'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      type="button"
+                      className={echoLibrarySource === value ? 'catalogChip active' : 'catalogChip'}
+                      onClick={() => changeEchoLibrarySource(value)}
+                      key={value}
+                    >
+                      {label}
+                    </button>
                   ))}
-                </select>
-              </label>
-              <label>
-                Ordenar
-                <select
-                  value={echoSort}
-                  onChange={(event) => setEchoSort(event.target.value as typeof echoSort)}
-                >
-                  <option value="api">ID da API</option>
-                  <option value="name">Nome</option>
-                  <option value="cost">Maior custo</option>
-                </select>
-              </label>
+                </div>
+              </div>
+              <div className="catalogFacet">
+                <span>Custo</span>
+                <div className="catalogChipRail">
+                  {[
+                    { value: 0, label: 'Todos' },
+                    { value: 1, label: 'Custo 1' },
+                    { value: 3, label: 'Custo 3' },
+                    { value: 4, label: 'Custo 4' },
+                  ].map((item) => (
+                    <button
+                      type="button"
+                      className={costFilter === item.value ? 'catalogChip active' : 'catalogChip'}
+                      onClick={() => setCostFilter(item.value)}
+                      key={item.value}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="sonataFilterGroup">
                 <span>Sonata</span>
                 <div className="sonataChipRail" role="group" aria-label="Filtrar por Sonata">
@@ -872,9 +1109,82 @@ export function BuildsPage({
                   ))}
                 </div>
               </div>
+              {echoLibrarySource === 'catalog' && (
+                <>
+                  <FilterField label="Classe">
+                    <select
+                      value={echoClassFilter}
+                      onChange={(event) => setEchoClassFilter(event.target.value)}
+                    >
+                      <option value="">Todas</option>
+                      {echoClasses.map((item) => (
+                        <option value={item} key={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </FilterField>
+                  <FilterField label="Tipo">
+                    <select
+                      value={echoTypeFilter}
+                      onChange={(event) => setEchoTypeFilter(event.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      {echoTypes.map((item) => (
+                        <option value={item} key={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </FilterField>
+                  <FilterField label="Local">
+                    <select
+                      value={echoPlaceFilter}
+                      onChange={(event) => setEchoPlaceFilter(event.target.value)}
+                    >
+                      <option value="">Todos</option>
+                      {echoPlaces.map((item) => (
+                        <option value={item} key={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </FilterField>
+                  <FilterField label="Raridade">
+                    <select
+                      value={echoRarityFilter}
+                      onChange={(event) => setEchoRarityFilter(Number(event.target.value))}
+                    >
+                      <option value={0}>Todas</option>
+                      <option value={5}>5 estrelas</option>
+                      <option value={4}>4 estrelas</option>
+                      <option value={3}>3 estrelas</option>
+                      <option value={2}>2 estrelas</option>
+                    </select>
+                  </FilterField>
+                  <FilterField label="Quantidade mínima">
+                    <input
+                      type="number"
+                      min={0}
+                      value={echoMinOwned || ''}
+                      placeholder="0"
+                      onChange={(event) => setEchoMinOwned(Number(event.target.value))}
+                    />
+                  </FilterField>
+                </>
+              )}
+              <button
+                type="button"
+                className={echoFavoritesOnly ? 'catalogToggle active' : 'catalogToggle'}
+                onClick={() => setEchoFavoritesOnly((current) => !current)}
+                aria-pressed={echoFavoritesOnly}
+              >
+                <Star size={14} fill={echoFavoritesOnly ? 'currentColor' : 'none'} />
+                Somente favoritos
+              </button>
             </>
           )}
-        </div>
+        </LibraryFilterBar>
         <div className="buildLibraryGrid">
           {target.kind === 'character' &&
             (library as Character[]).map((item) => (
@@ -907,6 +1217,7 @@ export function BuildsPage({
               />
             ))}
           {target.kind === 'echo' &&
+            echoLibrarySource === 'catalog' &&
             (library as Echo[]).map((item) => {
               const current = activeEcho;
               const unavailable = totalCost - (current?.cost ?? 0) + item.cost > 12;
@@ -922,8 +1233,60 @@ export function BuildsPage({
                 />
               );
             })}
+          {target.kind === 'echo' &&
+            echoLibrarySource === 'inventory' &&
+            ownedEchoLibrary.map((item) => {
+              const current = activeEcho;
+              const unavailable = totalCost - (current?.cost ?? 0) + item.cost > 12;
+              const usedElsewhere = draft.echoes.some(
+                (echo, index) => index !== target.slot && echo.id === item.id
+              );
+              const otherBuild = builds.find(
+                (build) => build.id !== draft.id && build.echoes.some((echo) => echo.id === item.id)
+              );
+              return (
+                <LibraryCard
+                  key={item.id}
+                  name={item.echoName}
+                  path={item.iconPath}
+                  meta={`Custo ${item.cost} · +${item.level} · ${item.mainStat || 'Sem atributo principal'}`}
+                  badge={
+                    usedElsewhere
+                      ? 'JÁ NA BUILD'
+                      : otherBuild
+                        ? `EM ${otherBuild.name}`
+                        : item.sonataName || 'INVENTÁRIO'
+                  }
+                  selected={current?.id === item.id}
+                  disabled={unavailable || usedElsewhere}
+                  onClick={() => selectOwnedEcho(item)}
+                />
+              );
+            })}
+          {target.kind === 'echo' && activeLibrary.length === 0 && (
+            <div className="buildLibraryEmpty">
+              <Waves size={24} />
+              <strong>
+                {echoLibrarySource === 'inventory'
+                  ? 'Nenhum Echo no inventário'
+                  : 'Nenhum Echo encontrado'}
+              </strong>
+              <small>
+                {echoLibrarySource === 'inventory'
+                  ? 'Cadastre peças na aba Echoes para reutilizá-las nas Builds.'
+                  : 'Ajuste os filtros para voltar ao catálogo.'}
+              </small>
+            </div>
+          )}
         </div>
       </section>
+
+      {shortcutFeedback && (
+        <div className={`shortcutToast ${shortcutFeedback.tone}`} role="status" aria-live="polite">
+          <kbd>{shortcutFeedback.message.includes('Nova') ? 'Ctrl+N' : 'Ctrl+S'}</kbd>
+          {shortcutFeedback.message}
+        </div>
+      )}
 
       {deletedID && (
         <div className="undoToast">
@@ -934,6 +1297,81 @@ export function BuildsPage({
         </div>
       )}
     </div>
+  );
+}
+
+function SonataSummary({ items }: { items: SonataProgressItem[] }) {
+  return (
+    <section className="sonataSummary" aria-labelledby="sonata-summary-title">
+      <header>
+        <div>
+          <span className="sectionLabel">EFEITOS DE SONATA</span>
+          <h3 id="sonata-summary-title">Conjuntos da build</h3>
+        </div>
+        <small>{items.length ? `${items.length} em uso` : 'Nenhum conjunto'}</small>
+      </header>
+      {items.length ? (
+        <div className="sonataSummaryGrid">
+          {items.map(({ sonata, count, tiers, hasActiveEffect, piecesWithoutActiveEffect }) => {
+            const nextTier = tiers.find((tier) => count < tier.pieces);
+            return (
+              <article className="sonataSummaryCard" key={sonata.id}>
+                <div className="sonataSummaryIdentity">
+                  {sonata.iconPath?.startsWith('/cache/') ? (
+                    <img src={sonata.iconPath} alt="" />
+                  ) : (
+                    <Waves size={22} aria-hidden="true" />
+                  )}
+                  <div>
+                    <strong>{sonata.name}</strong>
+                    <small>
+                      {count} {count === 1 ? 'peça equipada' : 'peças equipadas'}
+                    </small>
+                  </div>
+                  <span className={nextTier ? 'incomplete' : 'active'}>
+                    {nextTier ? `Faltam ${nextTier.pieces - count}` : 'Completo'}
+                  </span>
+                </div>
+                <div className="sonataTierList">
+                  {tiers.length ? (
+                    tiers.map((tier) => (
+                      <div
+                        className={tier.active ? 'sonataTier active' : 'sonataTier'}
+                        key={tier.pieces}
+                      >
+                        <span>{tier.pieces} peças</span>
+                        <strong>{tier.active ? 'Ativo' : `${tier.missing} restantes`}</strong>
+                        <p>{tier.description}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="sonataDescriptionUnavailable">
+                      A fonte sincronizada não forneceu uma descrição para este conjunto.
+                    </p>
+                  )}
+                </div>
+                {!hasActiveEffect && piecesWithoutActiveEffect > 0 && (
+                  <p className="sonataNoActiveEffect">
+                    {piecesWithoutActiveEffect}{' '}
+                    {piecesWithoutActiveEffect === 1
+                      ? 'peça ainda não ativa'
+                      : 'peças ainda não ativam'}{' '}
+                    um efeito deste conjunto.
+                  </p>
+                )}
+                <small className="sonataDataSource">
+                  Descrição oficial · Dados {sonata.gameVersion || 'sincronizados'}
+                </small>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="sonataSummaryEmpty">
+          Defina a Sonata dos Echoes para ver os efeitos oficiais ativos e o progresso do conjunto.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -1351,14 +1789,6 @@ function parseIDs(value: string): number[] {
   } catch {
     return [];
   }
-}
-
-function uniqueOptions(items: readonly (readonly [number, string])[]) {
-  return [
-    ...new Map(
-      items.filter(([id, name]) => id > 0 && Boolean(name)).map((item) => [item[0], item])
-    ).values(),
-  ].sort((left, right) => left[1].localeCompare(right[1]));
 }
 
 function compactSlots(items: OwnedEcho[]): OwnedEcho[] {

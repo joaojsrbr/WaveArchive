@@ -30,6 +30,8 @@ import { TeamsPage } from './TeamsPage';
 import { CalculatorPage } from './CalculatorPage';
 import { AssistantPage } from './AssistantPage';
 import { AccountPage, DashboardPage, SettingsPage } from './WorkspacePages';
+import { AdvancedFilters, FilterField, FilterRange } from './AdvancedFilters';
+import { GlobalSearch } from './GlobalSearch';
 import {
   cancelSync,
   catalogStatus,
@@ -110,6 +112,13 @@ const initialFilter: CharacterFilter = {
   query: '',
   element: 0,
   rarity: 0,
+  weaponType: 0,
+  gender: '',
+  account: 'all',
+  minLevel: 0,
+  maxLevel: 0,
+  minSequence: 0,
+  maxSequence: 0,
   ownedOnly: false,
   favorites: false,
   sort: 'name',
@@ -131,6 +140,8 @@ export function App() {
   const [syncProgress, setSyncProgress] = useState<SyncProgress>();
   const [page, setPage] = useState<PageID>(readStoredPage);
   const [openNav, setOpenNav] = useState<string | null>(null);
+  const [advancedCharacterFilters, setAdvancedCharacterFilters] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
 
   const load = useCallback(async (nextFilter: CharacterFilter) => {
     try {
@@ -164,7 +175,7 @@ export function App() {
     function shortcuts(event: KeyboardEvent) {
       if (event.ctrlKey && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        document.querySelector<HTMLInputElement>('.content .search input')?.focus();
+        setGlobalSearchOpen(true);
       } else if (event.ctrlKey && event.key === ',') {
         event.preventDefault();
         setPage('settings');
@@ -349,6 +360,11 @@ export function App() {
           ))}
         </nav>
         <div className="topActions">
+          <button className="globalSearchButton" onClick={() => setGlobalSearchOpen(true)}>
+            <Search size={15} />
+            Pesquisar
+            <kbd>Ctrl K</kbd>
+          </button>
           <span className="offlineBadge">
             <i /> LOCAL-FIRST
           </span>
@@ -508,7 +524,12 @@ export function App() {
 
                 <div className="resultMeta">
                   <strong>{resultLabel}</strong>
-                  {(filter.query || filter.element || filter.ownedOnly || filter.favorites) && (
+                  {(filter.query ||
+                    filter.element ||
+                    filter.rarity ||
+                    filter.ownedOnly ||
+                    filter.favorites ||
+                    characterAdvancedCount(filter) > 0) && (
                     <button onClick={() => setFilter(initialFilter)}>Limpar filtros</button>
                   )}
                 </div>
@@ -529,7 +550,30 @@ export function App() {
               </>
             )
           ) : page === 'dashboard' ? (
-            <DashboardPage onError={setError} onNavigate={setPage} />
+            <DashboardPage
+              onError={setError}
+              onNavigate={setPage}
+              onOpen={(kind, id, title) => {
+                if (kind === 'character') {
+                  setSelectedID(id);
+                  setPage('characters');
+                  return;
+                }
+                sessionStorage.setItem(
+                  'wavearchive:open-target',
+                  JSON.stringify({ kind, id, title })
+                );
+                setPage(
+                  kind === 'weapon'
+                    ? 'weapons'
+                    : kind === 'echo'
+                      ? 'echoes'
+                      : kind === 'team'
+                        ? 'teams'
+                        : 'builds'
+                );
+              }}
+            />
           ) : page === 'weapons' ? (
             <WeaponsPage version={status.version} onError={setError} />
           ) : page === 'echoes' ? (
@@ -537,7 +581,17 @@ export function App() {
           ) : page === 'sonata' ? (
             <EchoesPage mode="sonata" onError={setError} />
           ) : page === 'teams' ? (
-            <TeamsPage version={status.version} onError={setError} />
+            <TeamsPage
+              version={status.version}
+              onError={setError}
+              onOpenBuild={(build) => {
+                sessionStorage.setItem(
+                  'wavearchive:open-target',
+                  JSON.stringify({ kind: 'build', id: build.id, title: build.name })
+                );
+                setPage('builds');
+              }}
+            />
           ) : page === 'builds' ? (
             <BuildsPage version={status.version} onError={setError} />
           ) : page === 'calculator' ? (
@@ -553,6 +607,30 @@ export function App() {
           )}
         </section>
       </main>
+      <GlobalSearch
+        open={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        onNavigate={(kind, id, title) => {
+          const targetPage =
+            kind === 'character'
+              ? 'characters'
+              : kind === 'weapon'
+                ? 'weapons'
+                : kind === 'echo'
+                  ? 'echoes'
+                  : kind === 'sonata'
+                    ? 'sonata'
+                    : kind === 'build'
+                      ? 'builds'
+                      : kind === 'team'
+                        ? 'teams'
+                        : 'ai';
+          if (kind === 'character') setSelectedID(id);
+          else
+            sessionStorage.setItem('wavearchive:open-target', JSON.stringify({ kind, id, title }));
+          setPage(targetPage);
+        }}
+      />
     </div>
   );
 }
@@ -1006,6 +1084,18 @@ function readStoredFilter(): CharacterFilter {
   } catch {
     return initialFilter;
   }
+}
+
+function characterAdvancedCount(filter: CharacterFilter) {
+  return [
+    filter.weaponType,
+    filter.gender,
+    filter.account && filter.account !== 'all',
+    filter.minLevel,
+    filter.maxLevel,
+    filter.minSequence,
+    filter.maxSequence,
+  ].filter(Boolean).length;
 }
 
 function readStoredView(): 'grid' | 'table' {

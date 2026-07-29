@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { getWeapon, listWeapons, updateWeaponAccount } from './lib/backend';
 import type { Weapon, WeaponAccountUpdate, WeaponFilter } from './types';
+import { AdvancedFilters, FilterField, FilterRange } from './AdvancedFilters';
+import { readOpenTarget } from './lib/navigation';
 
 const weaponTypes = [
   [0, 'Todos'],
@@ -15,6 +17,14 @@ const initialFilter: WeaponFilter = {
   query: '',
   type: 0,
   rarity: 0,
+  subStat: '',
+  account: 'all',
+  minAtk: 0,
+  maxAtk: 0,
+  minLevel: 0,
+  maxLevel: 0,
+  minRank: 0,
+  maxRank: 0,
   ownedOnly: false,
   favorites: false,
   sort: 'name',
@@ -33,6 +43,7 @@ export function WeaponsPage({
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState<WeaponAccountUpdate>();
   const [saving, setSaving] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   async function load(next = filter) {
     try {
@@ -50,6 +61,11 @@ export function WeaponsPage({
     localStorage.setItem('wavearchive:weapon-filter', JSON.stringify(filter));
     return () => window.clearTimeout(timer);
   }, [filter]);
+
+  useEffect(() => {
+    const target = readOpenTarget('weapon');
+    if (target) void open(target.id);
+  }, []);
 
   async function open(id: number) {
     setLoading(true);
@@ -251,9 +267,84 @@ export function WeaponsPage({
           Favoritas
         </label>
       </div>
+      <AdvancedFilters
+        open={advancedOpen}
+        activeCount={weaponAdvancedCount(filter)}
+        onToggle={() => setAdvancedOpen((current) => !current)}
+        onReset={() =>
+          setFilter({
+            ...filter,
+            subStat: '',
+            account: 'all',
+            minAtk: 0,
+            maxAtk: 0,
+            minLevel: 0,
+            maxLevel: 0,
+            minRank: 0,
+            maxRank: 0,
+          })
+        }
+      >
+        <FilterField label="Atributo secundário" hint="Ex.: ATQ, Taxa Crítica, Regeneração">
+          <input
+            value={filter.subStat || ''}
+            onChange={(event) => setFilter({ ...filter, subStat: event.target.value })}
+            placeholder="Buscar atributo..."
+          />
+        </FilterField>
+        <FilterField label="Estado na conta">
+          <select
+            value={filter.account || 'all'}
+            onChange={(event) =>
+              setFilter({
+                ...filter,
+                account: event.target.value as WeaponFilter['account'],
+                ownedOnly: false,
+              })
+            }
+          >
+            <option value="all">Todas</option>
+            <option value="owned">Possuídas</option>
+            <option value="missing">Não possuídas</option>
+          </select>
+        </FilterField>
+        <FilterRange
+          label="ATK no nível 90"
+          min={1}
+          max={700}
+          minValue={filter.minAtk}
+          maxValue={filter.maxAtk}
+          onMinChange={(value) => setFilter({ ...filter, minAtk: value })}
+          onMaxChange={(value) => setFilter({ ...filter, maxAtk: value })}
+        />
+        <FilterRange
+          label="Nível na conta"
+          min={1}
+          max={90}
+          minValue={filter.minLevel}
+          maxValue={filter.maxLevel}
+          onMinChange={(value) => setFilter({ ...filter, minLevel: value })}
+          onMaxChange={(value) => setFilter({ ...filter, maxLevel: value })}
+        />
+        <FilterRange
+          label="Refinamento"
+          min={1}
+          max={5}
+          minValue={filter.minRank}
+          maxValue={filter.maxRank}
+          onMinChange={(value) => setFilter({ ...filter, minRank: value })}
+          onMaxChange={(value) => setFilter({ ...filter, maxRank: value })}
+          prefix="R"
+        />
+      </AdvancedFilters>
       <div className="resultMeta">
         <strong>{resultLabel}</strong>
-        {(filter.query || filter.type || filter.rarity || filter.ownedOnly || filter.favorites) && (
+        {(filter.query ||
+          filter.type ||
+          filter.rarity ||
+          filter.ownedOnly ||
+          filter.favorites ||
+          weaponAdvancedCount(filter) > 0) && (
           <button onClick={() => setFilter(initialFilter)}>Limpar filtros</button>
         )}
       </div>
@@ -434,6 +525,19 @@ function readFilter(): WeaponFilter {
   } catch {
     return initialFilter;
   }
+}
+
+function weaponAdvancedCount(filter: WeaponFilter) {
+  return [
+    filter.subStat,
+    filter.account && filter.account !== 'all',
+    filter.minAtk,
+    filter.maxAtk,
+    filter.minLevel,
+    filter.maxLevel,
+    filter.minRank,
+    filter.maxRank,
+  ].filter(Boolean).length;
 }
 
 function messageFrom(cause: unknown) {

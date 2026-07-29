@@ -28,10 +28,11 @@ const (
 var supportedVersions = map[string]bool{"3.5": true, "3.4": true, "3.3": true}
 
 type Client struct {
-	version  string
-	root     string
-	http     *http.Client
-	fallback *nanoka.Client
+	version    string
+	root       string
+	http       *http.Client
+	fallback   *nanoka.Client
+	revalidate bool
 
 	mu           sync.Mutex
 	texts        map[string]string
@@ -54,7 +55,17 @@ func NewClient(version, cacheRoot string, httpClient *http.Client, fallback *nan
 	if fallback == nil {
 		fallback = nanoka.NewClient(httpClient)
 	}
-	return &Client{version: version, root: cacheRoot, http: httpClient, fallback: fallback}, nil
+	revalidate := false
+	if transport, ok := httpClient.Transport.(interface{ ConditionalCache() bool }); ok {
+		revalidate = transport.ConditionalCache()
+	}
+	return &Client{
+		version:    version,
+		root:       cacheRoot,
+		http:       httpClient,
+		fallback:   fallback,
+		revalidate: revalidate,
+	}, nil
 }
 
 func (c *Client) DetectVersion(context.Context) (string, error) { return c.version, nil }
@@ -509,7 +520,9 @@ func (c *Client) ensureFile(ctx context.Context, path string) (string, error) {
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
 		return "", errors.New("Arikatsu source path escapes cache")
 	}
-	if info, err := os.Stat(destination); err == nil && info.Size() > 0 {
+	info, statErr := os.Stat(destination)
+	hasDestination := statErr == nil && info.Size() > 0
+	if hasDestination && !c.revalidate {
 		return destination, nil
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, repositoryBase+"/"+c.version+"/"+filepath.ToSlash(clean), nil)
@@ -525,6 +538,9 @@ func (c *Client) ensureFile(ctx context.Context, path string) (string, error) {
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("download Arikatsu %s: HTTP %d", path, response.StatusCode)
+	}
+	if hasDestination && response.Header.Get("X-WaveArchive-Cache") != "stored" {
+		return destination, nil
 	}
 	if response.ContentLength > maxSourceFile {
 		return "", fmt.Errorf("Arikatsu source %s exceeds size limit", path)

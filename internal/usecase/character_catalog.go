@@ -197,7 +197,11 @@ func (c *CharacterCatalog) syncVersion(ctx context.Context, version string, prog
 	}
 	syncedAt := time.Now().UTC()
 	progress("done", 100)
-	return domain.SyncResult{Version: version, Count: len(profiles), Synced: syncedAt}, nil
+	return domain.SyncResult{
+		Version: version,
+		Count:   len(profiles),
+		Synced:  syncedAt.Format(time.RFC3339),
+	}, nil
 }
 
 func (c *CharacterCatalog) loadMaterials(ctx context.Context, version string, profiles []domain.CharacterProfile, progress func(string, int)) {
@@ -296,23 +300,36 @@ func (c *CharacterCatalog) loadAssets(
 	}
 	type task struct {
 		profileIndex int
+		itemIndex    int
 		kind         string
 		source       string
 		relative     string
 	}
-	tasks := make([]task, 0, len(profiles)*3)
+	tasks := make([]task, 0, len(profiles)*9)
 	seenWeapons := map[int64]bool{}
 	for index, profile := range profiles {
 		id := profile.Character.ID
 		if profile.Character.IconPath != "" {
-			tasks = append(tasks, task{index, "icon", profile.Character.IconPath, fmt.Sprintf("characters/%d/icon.webp", id)})
+			tasks = append(tasks, task{profileIndex: index, kind: "icon", source: profile.Character.IconPath, relative: fmt.Sprintf("characters/%d/icon.webp", id)})
 		}
 		if profile.Character.BackgroundPath != "" {
-			tasks = append(tasks, task{index, "background", profile.Character.BackgroundPath, fmt.Sprintf("characters/%d/background.webp", id)})
+			tasks = append(tasks, task{profileIndex: index, kind: "background", source: profile.Character.BackgroundPath, relative: fmt.Sprintf("characters/%d/background.webp", id)})
 		}
 		if profile.SignatureWeapon != nil && profile.SignatureWeapon.IconPath != "" && !seenWeapons[profile.SignatureWeapon.ID] {
 			seenWeapons[profile.SignatureWeapon.ID] = true
-			tasks = append(tasks, task{index, "weapon", profile.SignatureWeapon.IconPath, fmt.Sprintf("weapons/%d/icon.webp", profile.SignatureWeapon.ID)})
+			tasks = append(tasks, task{profileIndex: index, kind: "weapon", source: profile.SignatureWeapon.IconPath, relative: fmt.Sprintf("weapons/%d/icon.webp", profile.SignatureWeapon.ID)})
+		}
+		for skillIndex, skill := range profile.Skills {
+			if skill.IconPath == "" {
+				continue
+			}
+			tasks = append(tasks, task{
+				profileIndex: index,
+				itemIndex:    skillIndex,
+				kind:         "skill",
+				source:       skill.IconPath,
+				relative:     fmt.Sprintf("characters/%d/skills/%03d.webp", id, skillIndex),
+			})
 		}
 	}
 	if len(tasks) == 0 {
@@ -371,6 +388,18 @@ func (c *CharacterCatalog) loadAssets(
 				weapon := profiles[result.task.profileIndex].SignatureWeapon
 				if weapon != nil {
 					weaponURLs[weapon.ID] = result.url
+				}
+			case "skill":
+				profile := &profiles[result.task.profileIndex]
+				if result.task.itemIndex < 0 || result.task.itemIndex >= len(profile.Skills) {
+					break
+				}
+				profile.Skills[result.task.itemIndex].IconPath = result.url
+				nodeID := profile.Skills[result.task.itemIndex].NodeID
+				for progressionIndex := range profile.Progression.Skills {
+					if profile.Progression.Skills[progressionIndex].NodeID == nodeID {
+						profile.Progression.Skills[progressionIndex].IconPath = result.url
+					}
 				}
 			}
 		}

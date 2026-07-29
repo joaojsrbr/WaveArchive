@@ -1,6 +1,6 @@
 # Arquitetura viva — WaveArchive
 
-Última revisão: 2026-07-28.
+Última revisão: 2026-07-29.
 
 ## Produto
 
@@ -70,6 +70,9 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
   quando não estão referenciados em `owned_echoes`; dados pessoais nunca são
   apagados pela troca de fonte ou versão.
 - `internal/sources/guide`: cliente dos guias externos.
+- `internal/httpcache`: transporte HTTP persistente. Revalida GETs com
+  `ETag`/`Last-Modified`, reaproveita respostas `304 Not Modified` e mantém a
+  última resposta válida como fallback offline.
 - `internal/assets`: cache validado de imagens.
 - `internal/database`: abertura, backup, restauração e migrations incorporadas.
 - `cmd/wavearchive-cli`: CLI que reutiliza o núcleo Go.
@@ -80,16 +83,53 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
 - `frontend/src/lib/backend.ts`: única fronteira para os bindings Wails.
 - `frontend/src/types.ts`: contratos consumidos pelo React.
 - `frontend/src/CharacterDetail.tsx`: perfil, materiais, Forte, árvore e lore.
-- `frontend/src/TeamsPage.tsx`: equipes, presets, biblioteca e tags oficiais.
+- `frontend/src/TeamsPage.tsx`: equipes, presets, biblioteca, tags oficiais e
+  vínculo de uma Build compatível a cada posição.
+- `frontend/src/BuildsPage.tsx`: composição de Builds, seleção de peças do
+  catálogo ou do inventário e resumo reativo dos efeitos de Sonata.
+- `frontend/src/LibraryFilterBar.tsx`: estrutura única de busca, ordenação e
+  facetas usada pelas bibliotecas contextuais de Equipes e Builds.
 - `frontend/src/AssistantPage.tsx`: chat contextual e configuração da sessão.
+- `frontend/src/GlobalSearch.tsx`: pesquisa global local (`Ctrl+K`) entre
+  personagens, armas, Echoes, Sonatas, builds, equipes e conversas de IA.
+- `frontend/src/WorkspacePages.tsx`: tela inicial operacional, configurações e
+  conta; o Dashboard deriva recentes, favoritos e incompletos dos contratos
+  existentes.
+- `frontend/src/AdvancedFilters.tsx`: estrutura compartilhada dos filtros
+  avançados e intervalos numéricos.
+- `frontend/src/lib/navigation.ts`: entrega o item selecionado na pesquisa
+  global à página de destino sem criar um segundo roteador.
+- `frontend/src/lib/contextualShortcuts.ts`: aplica `Ctrl+N` e `Ctrl+S` somente
+  nos compositores que registram ações contextuais e protege campos editáveis.
+- `frontend/src/lib/sonata.ts`: deriva, sem inventar dados, a contagem e o estado
+  dos efeitos a partir das peças escolhidas e das descrições sincronizadas.
+- `frontend/src/lib/teamSynergy.ts`: consolida as tags oficiais dos membros da
+  Equipe, mantendo descrição e personagens de origem.
 - `frontend/src/styles.css`: tokens e estilos globais.
 
 Páginas não devem chamar SQLite ou APIs externas diretamente.
+
+Durante `CharacterCatalog.Sync`, os ícones de `profile.Skills` são baixados
+depois dos detalhes e antes do `ReplaceSynced`. O mesmo caminho `/cache/` é
+associado à habilidade e à entrada correspondente em
+`profile.Progression.Skills`, evitando ícones genéricos quando a fonte fornece
+o asset oficial.
+
+O vínculo entre Equipe e Build usa exclusivamente `TeamMember.buildId`. A
+interface filtra Builds pelo personagem do slot e o `TeamManager` repete essa
+validação antes de persistir, impedindo referências cruzadas inválidas.
+
+Os filtros avançados são aplicados no SQLite para catálogos oficiais e no
+cliente apenas para coleções já carregadas, como Sonatas e equipes. Os campos
+disponíveis devem refletir somente dados reais do domínio. Grades extensas usam
+`content-visibility: auto` e tamanho intrínseco para evitar renderizar conteúdo
+fora da área visível sem alterar a navegação ou o layout.
 
 ## Dados e arquivos locais
 
 - Banco: `%AppData%\WaveArchive\wavearchive.db`.
 - Assets: `%AppData%\WaveArchive\assets`.
+- Cache HTTP: `%AppData%\WaveArchive\http-cache`.
 - Backups: `%AppData%\WaveArchive\backups`.
 - Snapshots: `%AppData%\WaveArchive\snapshots`.
 - Build Windows: `build/bin/WaveArchive.exe`.

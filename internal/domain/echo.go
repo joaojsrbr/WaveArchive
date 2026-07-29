@@ -32,7 +32,13 @@ type EchoFilter struct {
 	Query     string `json:"query"`
 	Cost      int    `json:"cost"`
 	SonataID  int64  `json:"sonataId"`
+	Class     string `json:"class"`
+	Type      string `json:"type"`
+	Place     string `json:"place"`
+	Rarity    int    `json:"rarity"`
+	MinOwned  int    `json:"minOwned"`
 	OwnedOnly bool   `json:"ownedOnly"`
+	Favorites bool   `json:"favorites"`
 	Sort      string `json:"sort"`
 }
 

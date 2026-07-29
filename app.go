@@ -20,6 +20,7 @@ import (
 	assetcache "wavearchive/internal/assets"
 	"wavearchive/internal/database"
 	"wavearchive/internal/domain"
+	"wavearchive/internal/httpcache"
 	"wavearchive/internal/repository"
 	arikatsusource "wavearchive/internal/sources/arikatsu"
 	guidesource "wavearchive/internal/sources/guide"
@@ -47,6 +48,8 @@ type App struct {
 	initErr     error
 	dataDir     string
 	dbPath      string
+	httpShort   *http.Client
+	httpLong    *http.Client
 
 	syncMu     sync.Mutex
 	syncCancel context.CancelFunc
@@ -93,8 +96,11 @@ func (a *App) initResources() error {
 	aiHistoryRepo := repository.NewAIHistorySQLite(db.SQL())
 	workspaceRepo := repository.NewWorkspaceSQLite(db.SQL())
 	guideRepo := repository.NewGuideSQLite(db.SQL())
-	client := nanoka.NewClient(nil)
-	a.assets = assetcache.NewCache(filepath.Join(dataDir, "assets"), nil)
+	cacheTransport := httpcache.NewTransport(filepath.Join(dataDir, "http-cache"), http.DefaultTransport)
+	a.httpShort = &http.Client{Timeout: 25 * time.Second, Transport: cacheTransport}
+	a.httpLong = &http.Client{Timeout: 90 * time.Second, Transport: cacheTransport}
+	client := nanoka.NewClient(a.httpShort)
+	a.assets = assetcache.NewCache(filepath.Join(dataDir, "assets"), a.httpShort)
 	a.db = db
 	a.dataDir = dataDir
 	a.dbPath = dbPath
@@ -102,14 +108,14 @@ func (a *App) initResources() error {
 	a.weapons = usecase.NewWeaponCatalog(weaponRepo, client, a.assets, a.logger)
 	a.echoes = usecase.NewEchoCatalog(echoRepo, client, a.assets, a.logger)
 	a.builds = usecase.NewBuildManager(buildRepo)
-	a.teams = usecase.NewTeamManager(teamRepo)
+	a.teams = usecase.NewTeamManager(teamRepo, buildRepo)
 	a.damage = usecase.NewDamageCalculator()
 	a.ai = usecase.NewAIAnalyzer(nil)
 	a.evaluator = usecase.NewBuildEvaluator(buildRepo, weaponRepo, theoryRepo, teamRepo, a.damage)
 	a.theorycraft = usecase.NewTheorycraftManager(theoryRepo, a.evaluator)
 	a.assistant = usecase.NewAssistantService(a.ai, aiHistoryRepo, a.evaluator, repo, guideRepo)
 	a.workspace = usecase.NewWorkspaceManager(workspaceRepo)
-	a.guides = usecase.NewGuideManager(guideRepo, guidesource.NewClient(nil))
+	a.guides = usecase.NewGuideManager(guideRepo, guidesource.NewClient(a.httpShort))
 	return nil
 }
 
@@ -515,13 +521,13 @@ func (a *App) SyncCharacters() (domain.SyncResult, error) {
 	if err != nil {
 		return domain.SyncResult{}, fmt.Errorf("load data source settings: %w", err)
 	}
-	source := usecase.CatalogSource(nanoka.NewClient(nil))
+	source := usecase.CatalogSource(nanoka.NewClient(a.httpShort))
 	if settings.DataSource == "arikatsu" {
 		arikatsuClient, sourceErr := arikatsusource.NewClient(
 			settings.DataVersion,
 			filepath.Join(a.dataDir, "sources", "arikatsu"),
-			nil,
-			nanoka.NewClient(nil),
+			a.httpLong,
+			nanoka.NewClient(a.httpShort),
 		)
 		if sourceErr != nil {
 			return domain.SyncResult{}, sourceErr

@@ -27,8 +27,31 @@ func (r *EchoSQLite) List(ctx context.Context, filter domain.EchoFilter) ([]doma
 		where = append(where, "EXISTS(SELECT 1 FROM json_each(e.sonata_ids_json) WHERE value=?)")
 		args = append(args, filter.SonataID)
 	}
+	if filter.Class != "" {
+		where = append(where, "LOWER(e.class)=LOWER(?)")
+		args = append(args, filter.Class)
+	}
+	if filter.Type != "" {
+		where = append(where, "LOWER(e.echo_type)=LOWER(?)")
+		args = append(args, filter.Type)
+	}
+	if filter.Place != "" {
+		where = append(where, "LOWER(e.place) LIKE LOWER(?)")
+		args = append(args, "%"+filter.Place+"%")
+	}
+	if filter.Rarity > 0 {
+		where = append(where, "EXISTS(SELECT 1 FROM json_each(e.rarities_json) WHERE CAST(value AS INTEGER)=?)")
+		args = append(args, filter.Rarity)
+	}
 	if filter.OwnedOnly {
 		where = append(where, "EXISTS(SELECT 1 FROM owned_echoes oe WHERE oe.echo_id=e.id)")
+	}
+	if filter.Favorites {
+		where = append(where, "EXISTS(SELECT 1 FROM owned_echoes oe WHERE oe.echo_id=e.id AND oe.favorite=1)")
+	}
+	if filter.MinOwned > 0 {
+		where = append(where, "(SELECT COUNT(*) FROM owned_echoes oe WHERE oe.echo_id=e.id) >= ?")
+		args = append(args, filter.MinOwned)
 	}
 	order := "e.name COLLATE NOCASE"
 	if filter.Sort == "cost" {

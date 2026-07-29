@@ -63,7 +63,7 @@ func TestCharacterCatalogPersistsAndSearchesWithFTS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.Count != 2 || status.Version != "3.5.3" || status.LastSyncAt == nil {
+	if status.Count != 2 || status.Version != "3.5.3" || status.LastSyncAt == "" {
 		t.Fatalf("unexpected status: %#v", status)
 	}
 

@@ -30,6 +30,7 @@ Antes de encerrar:
    contrato entre camadas mudou.
 3. Registre bloqueios reais e decisões pendentes, sem esconder falhas.
 4. Informe os arquivos modificados e quais validações foram ou não executadas.
+5. Compactar o contexto do `prompt/brain.md`
 
 ## Ordem de autoridade
 

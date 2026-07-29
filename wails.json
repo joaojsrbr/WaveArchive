@@ -11,5 +11,11 @@
   },
   "author": {
     "name": "WaveArchive"
+  },
+  "info": {
+    "companyName": "WaveArchive",
+    "productName": "WaveArchive",
+    "productVersion": "0.1.0-beta.1",
+    "comments": "Primeira versão beta do WaveArchive"
   }
 }

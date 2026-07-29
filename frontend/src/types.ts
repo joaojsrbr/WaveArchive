@@ -30,6 +30,13 @@ export type CharacterFilter = {
   query: string;
   element: number;
   rarity: number;
+  weaponType?: number;
+  gender?: string;
+  account?: 'all' | 'owned' | 'missing';
+  minLevel?: number;
+  maxLevel?: number;
+  minSequence?: number;
+  maxSequence?: number;
   ownedOnly: boolean;
   favorites: boolean;
   sort: 'name' | 'api' | 'rarity' | 'element' | 'id';
@@ -181,6 +188,14 @@ export type WeaponFilter = {
   query: string;
   type: number;
   rarity: number;
+  subStat?: string;
+  account?: 'all' | 'owned' | 'missing';
+  minAtk?: number;
+  maxAtk?: number;
+  minLevel?: number;
+  maxLevel?: number;
+  minRank?: number;
+  maxRank?: number;
   ownedOnly: boolean;
   favorites: boolean;
   sort: 'name' | 'rarity' | 'type' | 'atk' | 'id';
@@ -249,7 +264,13 @@ export type EchoFilter = {
   query: string;
   cost: number;
   sonataId: number;
+  class?: string;
+  type?: string;
+  place?: string;
+  rarity?: number;
+  minOwned?: number;
   ownedOnly: boolean;
+  favorites?: boolean;
   sort: 'name' | 'cost' | 'id';
 };
 

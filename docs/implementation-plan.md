@@ -1,90 +1,232 @@
-# Plano de implementação
+# Plano de implementação — WaveArchive
 
-## Fase 0 — concluída
+Última revisão: 2026-07-29.
 
-- Inspeção integral de `prompt/start.md`, `prompt/architecture.md`,
-  `prompt/brain.md` e `wuwa_scraper.py`.
-- Verificação de Go, Node.js, npm e Wails.
-- Registro da arquitetura e dos comportamentos reutilizáveis.
-- Validação do manifest e do schema real do índice do Nanoka.
+Este plano registra apenas o produto atual. Features removidas da interface não
+devem voltar por acidente só porque tabelas ou estruturas antigas ainda existem.
 
-## Fase 1 — fundação funcional
+## Fase 0 — fundação concluída
 
-- [x] Shell Wails, React e TypeScript estrito.
-- [x] Design tokens e primeira tela do catálogo.
-- [x] SQLite, WAL, migrations incorporadas e FTS5.
-- [x] Separação entre domínio, casos de uso, repositório e fonte externa.
-- [x] Preferências persistidas de sidebar, densidade, movimento e IA.
-- [x] Filtros e modo grade/tabela persistidos no frontend.
-- [x] Navegação funcional, breadcrumbs, sidebar recolhível e atalhos Ctrl+K/Ctrl+B/Ctrl+,/Escape.
-- [ ] Ação contextual de Ctrl+N.
-- [ ] Logs em arquivo com rotação e tela de diagnóstico.
+- [x] Leitura de `prompt/start.md`, `prompt/architecture.md` e
+  `prompt/brain.md`.
+- [x] Stack Go, Wails, React, TypeScript e SQLite.
+- [x] Arquitetura em domínio, casos de uso, repositórios e fontes externas.
+- [x] SQLite com WAL, migrations incorporadas, FTS5, backup e restauração.
+- [x] Design system escuro e responsivo inspirado em Wuthering Waves.
 
-## Fase 2 — sincronização
+## Fase 1 — shell, navegação e produtividade
 
-- [x] Detecção de versão e índice de personagens.
+- [x] Navegação superior responsiva e breadcrumbs.
+- [x] Pesquisa global com `Ctrl+K`.
+- [x] Persistência local de filtros, visualização e última página.
+- [x] Estados de carregamento, vazio, erro e sincronização.
+- [x] Ação contextual de `Ctrl+N`:
+  - Equipes cria uma nova equipe;
+  - Builds cria uma nova build;
+  - demais páginas não executam uma criação implícita.
+- [x] Atalho contextual de `Ctrl+S` para salvar a composição aberta.
+- [ ] Logs em arquivo com rotação, exportação e tela de diagnóstico.
+
+## Fase 2 — fontes e sincronização
+
+- [x] Nanoka como catálogo normalizado.
+- [x] Arikatsu Data como fonte selecionável, incluindo personagens, armas e
+  Echoes normalizados.
+- [x] Seleção de versão e suporte à versão mais recente e às duas anteriores
+  quando disponíveis na fonte.
 - [x] Retry transitório, timeout, cancelamento e limite de resposta.
-- [x] Upsert transacional sem sobrescrever dados pessoais.
-- [x] Snapshot consistente antes da sincronização e rollback com cópia de segurança.
-- [ ] ETag, Last-Modified e cache HTTP.
-- [x] Detalhes de personagens, skills, chains e armas assinatura.
-- [x] Download, validação e cache atômico de imagens WebP.
-- [x] Progresso detalhado e cancelamento pela interface.
+- [x] Upsert transacional sem sobrescrever posse, favoritos ou outros dados
+  pessoais.
+- [x] Snapshot antes da sincronização e restauração segura.
+- [x] Cache HTTP persistente com `ETag`, `Last-Modified`, respostas `304` e
+  fallback offline.
+- [x] Download e cache atômico de imagens.
+- [x] Progresso detalhado da sincronização na interface.
+- [ ] Tela de diferenças da atualização antes de aplicar uma nova versão:
+  personagens, armas, Echoes e Sonatas adicionados, alterados ou removidos.
+- [ ] Política configurável de retenção para cache, imagens e snapshots.
 
-## Fase 3 — catálogo
+## Fase 3 — catálogos
 
-- [x] Grade, tabela, busca e filtros essenciais.
-- [x] Ordenação original do catálogo da API preservada no SQLite.
-- [x] Estados vazio, carregando e erro.
-- [ ] Virtualização para listas extensas.
-- [x] Posse, nível, sequência e favoritos editáveis.
-- [x] Página de personagem com visão geral, kit e sequências.
-- [x] Materiais oficiais de ascensão, Forte e multiplicadores por nível.
-- [x] Planejador de nível/habilidades com totais calculados no domínio Go.
-- [x] Tags de função, guia do Forte, lore, atributos, fraqueza e árvore completa.
-- [x] Catálogo, página detalhada e inventário local de armas.
+- [x] Personagens, armas, Echoes e Sonata Effects.
+- [x] Busca, ordenação da API, filtros por dados reais e grade/tabela quando
+  aplicável.
+- [x] Rover masculino e feminino agrupados por atributo.
+- [x] Posse, nível, sequência, refinamento e favoritos.
+- [x] Página de personagem com visão geral, Kit & Árvore, sequências,
+  materiais, atributos e lore.
+- [x] Ícones oficiais das habilidades baixados durante a sincronização e
+  reutilizados entre o Kit, detalhes e progressão.
+- [x] Arma assinatura quando existir e arma recomendada para Rover.
+- [x] Inventário local de Echoes com atributo principal e subatributos válidos.
+- [x] Renderização diferida de grades extensas com `content-visibility`.
+- [ ] Paginação ou virtualização real somente se medições mostrarem que a
+  renderização diferida deixou de ser suficiente.
+- [ ] Inventário de materiais do usuário integrado aos totais de ascensão.
 
-## Fases seguintes
+## Fase 4 — Builds
 
-## Fase 4 — builds e equipes funcional
+- [x] CRUD, duplicação, favorito, bloqueio, exclusão e restauração.
+- [x] Personagem e arma compatível na composição.
+- [x] Até cinco Echoes respeitando custo total máximo de 12.
+- [x] Nível do Echo, Sonata, atributo principal e cinco subatributos.
+- [x] Arma assinatura priorizada; Rover usa recomendação em vez de assinatura.
+- [x] Biblioteca vertical com busca, ordenação e filtros contextuais:
+  - personagem não mostra filtro de arma;
+  - arma não mostra filtros de personagem;
+  - Echo mostra custo, chips de Sonata e seus próprios atributos.
+- [x] Histórico automático de versões da build.
+- [x] Importação e exportação pelo arquivo portátil do workspace.
+- [x] Validação visual da composição de Sonata, mostrando conjuntos ativos e
+  incompletos com a descrição oficial de cada efeito.
+- [x] Reutilizar diretamente peças cadastradas no inventário de Echoes, sem
+  copiar manualmente seus subatributos.
 
-- [x] CRUD de builds com personagem e arma.
-- [x] Duplicação, favorito, bloqueio e exclusão com undo.
-- [x] Versão do jogo, níveis, sequência, refinamento e notas.
-- [x] Cinco Echoes, main stats e substats.
-- [x] Buffs externos, condições, inimigo e rotação associada.
-- [x] Histórico automático de versões.
-- [ ] Importação/exportação.
+## Fase 5 — Equipes
 
-## Fase 5 — IA funcional
+- [x] CRUD, duplicação, exclusão e restauração.
+- [x] Composição com três personagens.
+- [x] Presets provenientes de guias sincronizados.
+- [x] Tags e funções oficiais da API, sem funções inventadas.
+- [x] Biblioteca compartilhada com Builds e filtros coerentes.
+- [x] Uma única rolagem na página; arquivo, inspetor e biblioteca não possuem
+  scroll vertical independente.
+- [x] Ação `Nova equipe` no topo do arquivo lateral.
+- [x] Vincular uma build salva a cada posição da equipe, limitada ao mesmo
+  personagem e com estado explícito quando a Build fica indisponível.
+- [x] Resumo de sinergia baseado exclusivamente nas tags oficiais dos três
+  personagens, com indicação navegável da fonte de cada informação.
+
+## Fase 6 — IA
 
 - [x] Ollama e LM Studio locais.
 - [x] Gemini remoto com chave somente em memória.
 - [x] Modos estrito, assistido e geral.
-- [x] Chat contextual de builds e equipes com histórico.
-- [x] Streaming, teste de conexão, descoberta de modelos e RAG estruturado por FTS5.
-- [x] Contexto de personagem e guias oficiais sincronizados sob demanda.
-- [ ] Embeddings e ferramentas com gravação confirmável.
+- [x] Chat contextual para personagem, build e equipe.
+- [x] Streaming, teste de conexão, descoberta de modelos e RAG com FTS5.
+- [ ] Embeddings locais opcionais.
+- [ ] Ferramentas de IA capazes de propor alterações em builds e equipes, mas
+  sempre exigindo confirmação antes de gravar.
 
-## Fases 6–8 — núcleo funcional
+## Fase 7 — confiabilidade e entrega
 
-- [x] Calculadora determinística, breakdown, inimigos e fórmula versionada.
-- [x] Echoes, rotações sequenciais e DPS.
-- [x] Dashboard, conta, planejador e Convene Tracker manual.
-- [x] Timeline avançada, cooldowns, energia, buffs temporais e avisos.
-- [x] Comparador de builds/equipes com DPS e exportação JSON/Markdown/PNG/PDF.
-- [x] Backup completo, restauração e importação/exportação portátil validada.
-- [x] Materiais oficiais.
-- [ ] Automatização Playwright do aplicativo empacotado.
+- [x] Backup, restauração e arquivo portátil validado.
+- [x] Build Windows em `build/bin/WaveArchive.exe`.
+- [x] Formatação automática no Wails, VS Code e pre-commit.
+- [x] Testes dos repositórios e regras determinísticas principais.
+- [ ] Automação de fluxos do aplicativo Wails empacotado.
+- [ ] Testes de acessibilidade para teclado, foco, zoom e redução de movimento.
+- [ ] Relatório de integridade da fonte mostrando campos ausentes, assets
+  quebrados e registros descartados durante a normalização.
 
-## Bloqueios e incertezas reais
+## Fora do escopo atual
 
-- Ascensões, custos de skills, stats e multiplicadores foram validados com o
-  payload real `character/1606.json` da versão `3.6.1`; os DTOs continuam
-  tolerantes a campos adicionais.
-- A referência visual “Healer Comparison” não está presente na pasta; o
-  comparador não deve ser finalizado sem esse asset.
-- A política exata de cache e retenção de snapshots precisa ser definida depois
-  de medir o tamanho real do conjunto completo de dados e imagens.
-- Bancos legados sem `schema_migrations` são reconciliados automaticamente desde
-  a migration `0005`; manter testes desse caminho em todas as próximas migrations.
+As seguintes features foram removidas da interface por decisão de produto:
+
+- Planejador antigo.
+- Convene Tracker.
+- Rotações.
+- Comparador.
+
+Estruturas legadas podem continuar no banco apenas para compatibilidade de
+migrations e arquivos antigos, mas não autorizam o retorno dessas telas.
+
+## Fase 8 — features aprovadas
+
+### 8.1 — atalhos contextuais
+
+- [x] `Ctrl+N` cria uma nova equipe em Equipes e uma nova build em Builds.
+- [x] `Ctrl+S` salva a equipe ou build aberta quando a composição for válida.
+- [x] Não executar as ações do app enquanto o foco estiver em campos de texto,
+  selects ou áreas editáveis.
+- [x] Exibir confirmação visual curta após criar, salvar ou impedir uma ação
+  inválida.
+
+### 8.2 — inventário de Echoes integrado às Builds
+
+- [x] Adicionar uma origem `Inventário` na biblioteca de Echoes da Build.
+- [x] Permitir escolher uma peça real já cadastrada, preservando ID, nível,
+  Sonata, atributo principal e subatributos.
+- [x] Indicar quando uma peça do inventário já está sendo usada em outra build,
+  sem impedir reutilização.
+- [ ] Manter o snapshot dos atributos dentro do histórico da build para que
+  versões antigas não mudem quando a peça for editada depois.
+- [ ] Se a peça for removida do inventário, preservar a Build e marcar sua
+  origem como indisponível.
+- [x] Reaproveitar as tabelas e contratos de `OwnedEcho`; criar migration apenas
+  se os testes mostrarem que a referência atual não é persistida com segurança.
+
+### 8.3 — conjuntos de Sonata na Build
+
+- [x] Calcular a contagem por Sonata usando somente as peças selecionadas.
+- [x] Mostrar conjuntos ativos e o número de peças restante para cada efeito
+  incompleto.
+- [x] Destacar quando as peças de um conjunto ainda não ativam nenhum efeito.
+- [x] Ler da fonte sincronizada as descrições oficiais dos efeitos de duas e
+  cinco peças, sem gerar texto ou bônus no frontend.
+- [x] Atualizar o resumo imediatamente ao adicionar, remover ou trocar a Sonata
+  de um Echo.
+- [x] Manter cor, texto e contagem para que o estado não dependa somente
+  de cor.
+
+### 8.4 — Builds vinculadas aos personagens da Equipe
+
+- [x] Usar o `buildId` já existente em `TeamMember`, sem criar relação paralela.
+- [x] Na posição selecionada, listar somente Builds do mesmo personagem.
+- [x] Permitir vincular, substituir, abrir e desvincular a Build.
+- [x] Exibir um resumo compacto de arma, custo dos Echoes e Sonatas.
+- [x] Se a Build for excluída, manter o personagem e mostrar `Build
+  indisponível` até o usuário escolher outra.
+
+### 8.5 — sinergia oficial da Equipe
+
+- [x] Consolidar as tags oficiais dos três personagens selecionados.
+- [x] Separar funções compartilhadas e individuais sem criar pontuação ou
+  inferir capacidades ausentes que a fonte não declarou.
+- [x] Exibir a origem de cada tag e permitir selecionar o personagem
+  correspondente.
+- [x] Usar os textos sincronizados da API/guia; não gerar recomendações como se
+  fossem dados oficiais.
+- [x] Atualizar o resumo imediatamente ao trocar um personagem.
+
+### 8.6 — tela inicial operacional
+
+- [x] Seção `Recentes` com Builds e Equipes ordenadas pela última alteração.
+- [x] Seção `Favoritos` reunindo itens favoritos dos catálogos e composições.
+- [x] Seção `Incompletos` com Builds sem arma ou com menos de cinco Echoes e
+  Equipes sem três Builds válidas.
+- [x] Cada item abre diretamente a tela e o registro correto.
+- [x] Estado vazio útil, sem cards decorativos ou métricas inventadas.
+- [x] Limitar a quantidade inicial para manter a tela inicial rápida.
+
+## Ordem de implementação aprovada
+
+1. Atalhos contextuais `Ctrl+N` e `Ctrl+S`.
+2. Inventário de Echoes integrado às Builds.
+3. Indicadores de Sonata ativos e incompletos.
+4. Builds vinculadas às posições da Equipe.
+5. Sinergia baseada nas tags oficiais.
+6. Tela inicial de recentes, favoritos e incompletos.
+
+A tela inicial fica por último porque depende dos estados produzidos pelas
+outras features. O vínculo de Build usa o campo `buildId` já existente, e a
+sinergia deve consumir somente dados oficiais que já passaram pela
+normalização.
+
+## Features não selecionadas nesta rodada
+
+- Inventário de materiais com cálculo do que ainda falta.
+- Comparação entre versões antes da sincronização.
+- Relatório de integridade das fontes Nanoka e Arikatsu.
+- Compartilhamento individual de Build/Equipe por arquivo ou código.
+
+## Bloqueios e regras permanentes
+
+- Não inventar dados, funções, recomendações ou relações que não existam nas
+  fontes sincronizadas.
+- Preservar dados pessoais durante troca de fonte ou versão.
+- Não reintroduzir features listadas como fora do escopo sem nova decisão
+  explícita.
+- Antes de virtualização complexa, medir tempo de renderização, memória e
+  fluidez com o catálogo completo.
+- Manter testes para bancos legados sem `schema_migrations`.
