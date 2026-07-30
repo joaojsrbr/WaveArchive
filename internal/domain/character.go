@@ -108,6 +108,16 @@ type MaterialCost struct {
 	Quantity int      `json:"quantity"`
 }
 
+type CharacterContentSearchResult struct {
+	Kind          string `json:"kind"`
+	EntityID      string `json:"entityId"`
+	CharacterID   int64  `json:"characterId"`
+	CharacterName string `json:"characterName"`
+	Title         string `json:"title"`
+	Subtitle      string `json:"subtitle"`
+	IconPath      string `json:"iconPath"`
+}
+
 type AscensionStage struct {
 	Stage       int            `json:"stage"`
 	UnlockLevel int            `json:"unlockLevel"`

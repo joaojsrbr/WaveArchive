@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Bot,
   Database,
+  Package,
   Search,
   ShieldCheck,
   Sparkles,
@@ -11,6 +12,7 @@ import {
   UsersRound,
   Waves,
   X,
+  Zap,
 } from 'lucide-react';
 import {
   listAIConversations,
@@ -20,10 +22,20 @@ import {
   listSonatas,
   listTeams,
   listWeapons,
+  searchCharacterContent,
 } from './lib/backend';
 
 type SearchKind =
-  'all' | 'character' | 'weapon' | 'echo' | 'sonata' | 'build' | 'team' | 'conversation';
+  | 'all'
+  | 'character'
+  | 'skill'
+  | 'material'
+  | 'weapon'
+  | 'echo'
+  | 'sonata'
+  | 'build'
+  | 'team'
+  | 'conversation';
 type SearchScope = 'all' | 'official' | 'personal';
 type SearchResult = {
   key: string;
@@ -40,6 +52,8 @@ type SearchResult = {
 const categories: Array<[SearchKind, string]> = [
   ['all', 'Tudo'],
   ['character', 'Personagens'],
+  ['skill', 'Habilidades'],
+  ['material', 'Materiais'],
   ['weapon', 'Armas'],
   ['echo', 'Echoes'],
   ['sonata', 'Sonatas'],
@@ -81,7 +95,7 @@ export function GlobalSearch({
       try {
         const official = scope !== 'personal';
         const personal = scope !== 'official';
-        const [characters, weapons, echoes, sonatas, builds, teams, conversations] =
+        const [characters, content, weapons, echoes, sonatas, builds, teams, conversations] =
           await Promise.all([
             official && (kind === 'all' || kind === 'character')
               ? listCharacters({
@@ -93,6 +107,9 @@ export function GlobalSearch({
                   favorites: favoritesOnly,
                   sort: 'api',
                 })
+              : [],
+            official && (kind === 'all' || kind === 'skill' || kind === 'material')
+              ? searchCharacterContent(query, 24)
               : [],
             official && (kind === 'all' || kind === 'weapon')
               ? listWeapons({
@@ -133,6 +150,18 @@ export function GlobalSearch({
             favorite: item.favorite,
             owned: item.owned,
           })),
+          ...content
+            .filter((item) => kind === 'all' || item.kind === kind)
+            .slice(0, 24)
+            .map((item) => ({
+              key: `${item.kind}-${item.entityId}-${item.characterId}`,
+              kind: item.kind,
+              id: item.characterId,
+              title: item.title,
+              subtitle: `${item.subtitle} · ${item.characterName}`,
+              meta: item.kind === 'skill' ? 'Abrir Kit & Árvore' : 'Abrir materiais',
+              iconPath: item.iconPath,
+            })),
           ...weapons.slice(0, 16).map((item) => ({
             key: `weapon-${item.id}`,
             kind: 'weapon' as const,
@@ -272,7 +301,12 @@ export function GlobalSearch({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Pesquisar em todo o WaveArchive..."
             onKeyDown={(event) => {
-              if (event.key === 'Escape') onClose();
+              if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                onClose();
+                return;
+              }
               if (event.key === 'ArrowDown') {
                 event.preventDefault();
                 setActiveIndex((index) => Math.min(index + 1, results.length - 1));
@@ -442,6 +476,8 @@ export function GlobalSearch({
 function ResultIcon({ kind }: { kind: SearchResult['kind'] }) {
   const Icon = {
     character: UserRound,
+    skill: Zap,
+    material: Package,
     weapon: Swords,
     echo: Waves,
     sonata: Sparkles,

@@ -28,18 +28,24 @@ type DetailTab = 'overview' | 'kit' | 'forte' | 'tree' | 'chains' | 'materials' 
 
 export function CharacterDetail({
   profile,
+  initialTab = 'overview',
   onBack,
   onSaveAccount,
 }: {
   profile: CharacterProfile;
+  initialTab?: 'overview' | 'kit' | 'materials';
   onBack: () => void;
   onSaveAccount: (update: CharacterAccountUpdate) => Promise<void>;
 }) {
-  const [tab, setTab] = useState<DetailTab>('overview');
+  const [tab, setTab] = useState<DetailTab>(initialTab);
   const [accountDraft, setAccountDraft] = useState<CharacterAccountUpdate>();
   const [savingAccount, setSavingAccount] = useState(false);
   const character = profile.character;
   const showKitTree = tab === 'kit' || tab === 'forte' || tab === 'tree';
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab, profile.character.id]);
 
   function openAccountEditor() {
     setAccountDraft({

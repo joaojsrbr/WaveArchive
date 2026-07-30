@@ -87,6 +87,21 @@ func TestCharacterCatalogPersistsAndSearchesWithFTS(t *testing.T) {
 		t.Fatalf("unexpected extras: %#v", profile.Extras)
 	}
 
+	skills, err := repo.SearchContent(context.Background(), "Basic Attack", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(skills) != 1 || skills[0].Kind != "skill" || skills[0].CharacterID != 101 || skills[0].Title != "Basic Attack" {
+		t.Fatalf("unexpected skill search: %#v", skills)
+	}
+	materials, err := repo.SearchContent(context.Background(), "Shell Credit", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(materials) != 1 || materials[0].Kind != "material" || materials[0].CharacterID != 101 || materials[0].Title != "Shell Credit" {
+		t.Fatalf("unexpected material search: %#v", materials)
+	}
+
 	if err := repo.UpdateAccount(context.Background(), domain.CharacterAccountUpdate{
 		CharacterID: 101,
 		Owned:       false,

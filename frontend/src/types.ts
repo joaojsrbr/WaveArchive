@@ -81,6 +81,15 @@ export type Material = {
   sources: string[];
   gameVersion: string;
 };
+export type CharacterContentSearchResult = {
+  kind: 'skill' | 'material';
+  entityId: string;
+  characterId: number;
+  characterName: string;
+  title: string;
+  subtitle: string;
+  iconPath: string;
+};
 export type MaterialCost = { material: Material; quantity: number };
 export type AscensionStage = { stage: number; unlockLevel: number; costs: MaterialCost[] };
 export type SkillValueRow = { name: string; values: string[] };
@@ -726,6 +735,7 @@ export type CharacterProfile = {
 
 export type BackendAPI = {
   ListCharacters(filter: CharacterFilter): Promise<Character[]>;
+  SearchCharacterContent(query: string, limit: number): Promise<CharacterContentSearchResult[]>;
   GetCharacter(id: number): Promise<CharacterProfile>;
   CalculateCharacterProgression(request: ProgressionPlanRequest): Promise<ProgressionPlan>;
   CatalogStatus(): Promise<CatalogStatus>;

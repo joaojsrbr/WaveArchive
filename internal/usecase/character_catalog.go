@@ -32,6 +32,10 @@ func (c *CharacterCatalog) List(ctx context.Context, filter domain.CharacterFilt
 	return c.repository.List(ctx, filter)
 }
 
+func (c *CharacterCatalog) SearchContent(ctx context.Context, query string, limit int) ([]domain.CharacterContentSearchResult, error) {
+	return c.repository.SearchContent(ctx, query, limit)
+}
+
 func (c *CharacterCatalog) Get(ctx context.Context, id int64) (domain.CharacterProfile, error) {
 	return c.repository.GetProfile(ctx, id)
 }

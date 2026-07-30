@@ -11,6 +11,7 @@ import type {
   CatalogStatus,
   Character,
   CharacterAccountUpdate,
+  CharacterContentSearchResult,
   CharacterFilter,
   CharacterProfile,
   ConveneImportResult,
@@ -175,6 +176,13 @@ export async function listCharacters(filter: CharacterFilter): Promise<Character
     : import.meta.env.DEV
       ? listPreviewCharacters(filter)
       : [];
+}
+
+export async function searchCharacterContent(
+  query: string,
+  limit = 20
+): Promise<CharacterContentSearchResult[]> {
+  return (await api()?.SearchCharacterContent(query, limit)) ?? [];
 }
 
 export async function catalogStatus(): Promise<CatalogStatus> {

@@ -38,6 +38,8 @@ Versão pública atual: `1.0.0`.
   pontuação. A tela inicial reúne recentes, favoritos e composições incompletas
   usando somente o estado persistido.
 - Funcionalidades gerais: Dashboard, conta, import/export, backups, busca global (`Ctrl+K`), filtros avançados consistentes em todas as entidades.
+- A pesquisa global inclui nomes de habilidades e materiais. `Esc` fecha
+  primeiro o modal de pesquisa e não deve também sair do perfil do personagem.
 - Histórico de Convene: importação automática pelo log, arquivo selecionado ou
   URL; banners dinâmicos, pity, filtros, linha do tempo, associação com o
   catálogo, prevenção de duplicidade e exclusão integral dos dados importados.

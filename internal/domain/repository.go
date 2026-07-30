@@ -4,6 +4,7 @@ import "context"
 
 type CharacterRepository interface {
 	List(ctx context.Context, filter CharacterFilter) ([]Character, error)
+	SearchContent(ctx context.Context, query string, limit int) ([]CharacterContentSearchResult, error)
 	GetProfile(ctx context.Context, id int64) (CharacterProfile, error)
 	ReplaceSynced(ctx context.Context, version string, characters []CharacterProfile) error
 	UpdateAccount(ctx context.Context, update CharacterAccountUpdate) error

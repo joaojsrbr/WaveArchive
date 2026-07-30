@@ -95,7 +95,10 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
 - `frontend/src/ConvenePage.tsx`: importação, filtros, pity, linha do tempo,
   inspeção de banners e exclusão do Histórico de Convene.
 - `frontend/src/GlobalSearch.tsx`: pesquisa global local (`Ctrl+K`) entre
-  personagens, armas, Echoes, Sonatas, builds, equipes e conversas de IA.
+  personagens, habilidades, materiais, armas, Echoes, Sonatas, builds, equipes
+  e conversas de IA. Habilidades e materiais são consultados no SQLite por
+  `SearchCharacterContent` e abrem diretamente a aba correspondente do
+  personagem.
 - `frontend/src/WorkspacePages.tsx`: tela inicial operacional, configurações e
   conta; o Dashboard deriva recentes, favoritos e incompletos dos contratos
   existentes.

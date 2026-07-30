@@ -17,8 +17,8 @@ serviço remoto para armazenar informações pessoais.
 - catálogos de personagens, armas, Echoes e Sonata Effects;
 - fontes selecionáveis Nanoka e Arikatsu Data;
 - cache HTTP com `ETag`, `Last-Modified` e fallback offline;
-- pesquisa global com `Ctrl+K`, filtros contextuais, favoritos e ordenação da
-  fonte;
+- pesquisa global com `Ctrl+K` entre catálogos, habilidades, materiais e dados
+  pessoais, além de filtros contextuais, favoritos e ordenação da fonte;
 - agrupamento das variantes masculina e feminina do Rover.
 
 ### Personagens e progressão

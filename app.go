@@ -147,6 +147,13 @@ func (a *App) ListCharacters(filter domain.CharacterFilter) ([]domain.Character,
 	return a.catalog.List(a.context(), filter)
 }
 
+func (a *App) SearchCharacterContent(query string, limit int) ([]domain.CharacterContentSearchResult, error) {
+	if err := a.ready(); err != nil {
+		return nil, err
+	}
+	return a.catalog.SearchContent(a.context(), query, limit)
+}
+
 func (a *App) CatalogStatus() (domain.CatalogStatus, error) {
 	if err := a.ready(); err != nil {
 		return domain.CatalogStatus{}, err

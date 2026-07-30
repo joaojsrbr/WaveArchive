@@ -116,6 +116,103 @@ func (r *CharacterSQLite) List(ctx context.Context, filter domain.CharacterFilte
 	return characters, rows.Err()
 }
 
+func (r *CharacterSQLite) SearchContent(ctx context.Context, query string, limit int) ([]domain.CharacterContentSearchResult, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []domain.CharacterContentSearchResult{}, nil
+	}
+	if limit < 1 {
+		limit = 20
+	}
+	if limit > 60 {
+		limit = 60
+	}
+	pattern := "%" + strings.ToLower(query) + "%"
+	results := make([]domain.CharacterContentSearchResult, 0, limit*2)
+
+	skillRows, err := r.db.QueryContext(ctx, `
+		SELECT s.character_id, c.name, s.node_id, s.name, s.skill_type, s.icon_path
+		FROM skills s
+		JOIN characters c ON c.id = s.character_id
+		WHERE LOWER(s.name) LIKE ? OR LOWER(s.description) LIKE ?
+		ORDER BY
+			CASE WHEN LOWER(s.name) = LOWER(?) THEN 0 ELSE 1 END,
+			c.api_order ASC,
+			s.sort_order ASC
+		LIMIT ?`, pattern, pattern, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search character skills: %w", err)
+	}
+	for skillRows.Next() {
+		var result domain.CharacterContentSearchResult
+		result.Kind = "skill"
+		if err := skillRows.Scan(
+			&result.CharacterID,
+			&result.CharacterName,
+			&result.EntityID,
+			&result.Title,
+			&result.Subtitle,
+			&result.IconPath,
+		); err != nil {
+			skillRows.Close()
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	if err := skillRows.Err(); err != nil {
+		skillRows.Close()
+		return nil, err
+	}
+	skillRows.Close()
+
+	materialRows, err := r.db.QueryContext(ctx, `
+		WITH material_usage(character_id, material_id) AS (
+			SELECT character_id, material_id FROM character_ascension_costs
+			UNION
+			SELECT character_id, material_id FROM skill_unlock_costs
+			UNION
+			SELECT character_id, material_id FROM skill_level_costs
+		),
+		first_usage AS (
+			SELECT material_id, MIN(character_id) AS character_id
+			FROM material_usage
+			GROUP BY material_id
+		)
+		SELECT CAST(m.id AS TEXT), m.name, m.icon_path, c.id, c.name
+		FROM materials m
+		JOIN first_usage usage ON usage.material_id = m.id
+		JOIN characters c ON c.id = usage.character_id
+		WHERE LOWER(m.name) LIKE ? OR LOWER(m.description) LIKE ?
+		ORDER BY
+			CASE WHEN LOWER(m.name) = LOWER(?) THEN 0 ELSE 1 END,
+			m.rarity DESC,
+			m.name COLLATE NOCASE ASC
+		LIMIT ?`, pattern, pattern, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("search character materials: %w", err)
+	}
+	defer materialRows.Close()
+	for materialRows.Next() {
+		var result domain.CharacterContentSearchResult
+		result.Kind = "material"
+		result.Subtitle = "Material"
+		if err := materialRows.Scan(
+			&result.EntityID,
+			&result.Title,
+			&result.IconPath,
+			&result.CharacterID,
+			&result.CharacterName,
+		); err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+	if err := materialRows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func (r *CharacterSQLite) GetProfile(ctx context.Context, id int64) (domain.CharacterProfile, error) {
 	var profile domain.CharacterProfile
 	var signatureID sql.NullInt64

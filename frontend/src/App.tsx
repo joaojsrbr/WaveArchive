@@ -131,6 +131,7 @@ const initialFilter: CharacterFilter = {
 };
 
 type SyncProgress = { stage: string; progress: number };
+type CharacterDetailTarget = 'overview' | 'kit' | 'materials';
 
 export function App() {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -148,6 +149,8 @@ export function App() {
   const [openNav, setOpenNav] = useState<string | null>(null);
   const [advancedCharacterFilters, setAdvancedCharacterFilters] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [characterDetailTarget, setCharacterDetailTarget] =
+    useState<CharacterDetailTarget>('overview');
 
   const load = useCallback(async (nextFilter: CharacterFilter) => {
     try {
@@ -186,13 +189,18 @@ export function App() {
         event.preventDefault();
         setPage('settings');
       } else if (event.key === 'Escape') {
+        if (globalSearchOpen) {
+          event.preventDefault();
+          setGlobalSearchOpen(false);
+          return;
+        }
         if (openNav) setOpenNav(null);
         else if (selectedID !== undefined) setSelectedID(undefined);
       }
     }
     window.addEventListener('keydown', shortcuts);
     return () => window.removeEventListener('keydown', shortcuts);
-  }, [openNav, selectedID]);
+  }, [globalSearchOpen, openNav, selectedID]);
 
   useEffect(() => {
     function closeNavigation(event: PointerEvent) {
@@ -427,6 +435,7 @@ export function App() {
               ) : (
                 <CharacterDetail
                   profile={profile}
+                  initialTab={characterDetailTarget}
                   onBack={() => setSelectedID(undefined)}
                   onSaveAccount={saveAccount}
                 />
@@ -553,11 +562,20 @@ export function App() {
                 ) : view === 'grid' ? (
                   <CharacterGrid
                     characters={characters}
-                    onOpen={setSelectedID}
+                    onOpen={(id) => {
+                      setCharacterDetailTarget('overview');
+                      setSelectedID(id);
+                    }}
                     onFavorite={toggleFavorite}
                   />
                 ) : (
-                  <CharacterTable characters={characters} onOpen={setSelectedID} />
+                  <CharacterTable
+                    characters={characters}
+                    onOpen={(id) => {
+                      setCharacterDetailTarget('overview');
+                      setSelectedID(id);
+                    }}
+                  />
                 )}
               </>
             )
@@ -567,6 +585,7 @@ export function App() {
               onNavigate={setPage}
               onOpen={(kind, id, title) => {
                 if (kind === 'character') {
+                  setCharacterDetailTarget('overview');
                   setSelectedID(id);
                   setPage('characters');
                   return;
@@ -625,22 +644,26 @@ export function App() {
         open={globalSearchOpen}
         onClose={() => setGlobalSearchOpen(false)}
         onNavigate={(kind, id, title) => {
-          const targetPage =
-            kind === 'character'
-              ? 'characters'
-              : kind === 'weapon'
-                ? 'weapons'
-                : kind === 'echo'
-                  ? 'echoes'
-                  : kind === 'sonata'
-                    ? 'sonata'
-                    : kind === 'build'
-                      ? 'builds'
-                      : kind === 'team'
-                        ? 'teams'
-                        : 'ai';
-          if (kind === 'character') setSelectedID(id);
-          else
+          const characterContent = kind === 'character' || kind === 'skill' || kind === 'material';
+          const targetPage = characterContent
+            ? 'characters'
+            : kind === 'weapon'
+              ? 'weapons'
+              : kind === 'echo'
+                ? 'echoes'
+                : kind === 'sonata'
+                  ? 'sonata'
+                  : kind === 'build'
+                    ? 'builds'
+                    : kind === 'team'
+                      ? 'teams'
+                      : 'ai';
+          if (characterContent) {
+            setCharacterDetailTarget(
+              kind === 'skill' ? 'kit' : kind === 'material' ? 'materials' : 'overview'
+            );
+            setSelectedID(id);
+          } else
             sessionStorage.setItem('wavearchive:open-target', JSON.stringify({ kind, id, title }));
           setPage(targetPage);
         }}
