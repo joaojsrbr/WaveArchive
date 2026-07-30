@@ -70,6 +70,8 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
   quando não estão referenciados em `owned_echoes`; dados pessoais nunca são
   apagados pela troca de fonte ou versão.
 - `internal/sources/guide`: cliente dos guias externos.
+- `internal/sources/convene`: descoberta e decodificação do histórico local,
+  leitura da URL de importação e catálogo dinâmico de banners.
 - `internal/httpcache`: transporte HTTP persistente. Revalida GETs com
   `ETag`/`Last-Modified`, reaproveita respostas `304 Not Modified` e mantém a
   última resposta válida como fallback offline.
@@ -90,6 +92,8 @@ O domínio não deve importar Wails, React, SQLite ou DTOs das APIs.
 - `frontend/src/LibraryFilterBar.tsx`: estrutura única de busca, ordenação e
   facetas usada pelas bibliotecas contextuais de Equipes e Builds.
 - `frontend/src/AssistantPage.tsx`: chat contextual e configuração da sessão.
+- `frontend/src/ConvenePage.tsx`: importação, filtros, pity, linha do tempo,
+  inspeção de banners e exclusão do Histórico de Convene.
 - `frontend/src/GlobalSearch.tsx`: pesquisa global local (`Ctrl+K`) entre
   personagens, armas, Echoes, Sonatas, builds, equipes e conversas de IA.
 - `frontend/src/WorkspacePages.tsx`: tela inicial operacional, configurações e
@@ -133,6 +137,10 @@ fora da área visível sem alterar a navegação ou o layout.
 - Backups: `%AppData%\WaveArchive\backups`.
 - Snapshots: `%AppData%\WaveArchive\snapshots`.
 - Build Windows: `build/bin/WaveArchive.exe`.
+
+O Histórico de Convene é armazenado no SQLite local pelas tabelas da migration
+`0016_convene_history.sql`. A importação é idempotente: registros já existentes
+não são duplicados, e a exclusão remove somente o histórico importado.
 
 SQLite usa foreign keys, WAL, busy timeout e migrations sequenciais em
 `internal/database/migrations`. Dados oficiais e dados pessoais são mantidos

@@ -114,6 +114,10 @@ devem voltar por acidente só porque tabelas ou estruturas antigas ainda existem
 - [x] Build Windows em `build/bin/WaveArchive.exe`.
 - [x] Formatação automática no Wails, VS Code e pre-commit.
 - [x] Testes dos repositórios e regras determinísticas principais.
+- [x] Histórico de Convene local com:
+  - descoberta automática do log, seleção manual ou URL;
+  - banners dinâmicos, pity, filtros e linha do tempo de cinco estrelas;
+  - associação com o catálogo, prevenção de duplicidade e exclusão integral.
 - [ ] Automação de fluxos do aplicativo Wails empacotado.
 - [ ] Testes de acessibilidade para teclado, foco, zoom e redução de movimento.
 - [ ] Relatório de integridade da fonte mostrando campos ausentes, assets
@@ -124,7 +128,6 @@ devem voltar por acidente só porque tabelas ou estruturas antigas ainda existem
 As seguintes features foram removidas da interface por decisão de produto:
 
 - Planejador antigo.
-- Convene Tracker.
 - Rotações.
 - Comparador.
 

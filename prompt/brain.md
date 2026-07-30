@@ -9,6 +9,8 @@ Não substitui o código, não contém segredos e não deve virar um diário ext
 
 Manter um aplicativo desktop local-first, confiável e visualmente premium para consultar dados oficiais, planejar progressão, montar builds/equipes e usar IA contextual sem inventar dados do jogo.
 
+Versão pública atual: `1.0.0`.
+
 ## Decisões confirmadas
 
 - Stack: Go + Wails + React + TypeScript + SQLite.
@@ -36,6 +38,9 @@ Manter um aplicativo desktop local-first, confiável e visualmente premium para 
   pontuação. A tela inicial reúne recentes, favoritos e composições incompletas
   usando somente o estado persistido.
 - Funcionalidades gerais: Dashboard, conta, import/export, backups, busca global (`Ctrl+K`), filtros avançados consistentes em todas as entidades.
+- Histórico de Convene: importação automática pelo log, arquivo selecionado ou
+  URL; banners dinâmicos, pity, filtros, linha do tempo, associação com o
+  catálogo, prevenção de duplicidade e exclusão integral dos dados importados.
 - Assistente contextual: histórico, streaming, RAG FTS5.
 - Cache HTTP condicional com ETag/Last-Modified. Renderização diferida em grades extensas.
 - Formatação automática nativa via Wails hooks, VS Code e pre-commit Git.
@@ -73,6 +78,8 @@ Manter um aplicativo desktop local-first, confiável e visualmente premium para 
   - Sinergia oficial rastreável e tela inicial operacional baseada no workspace.
   - Cache local dos ícones oficiais de Normal Attack, Resonance Skill,
     Liberation, Forte, Intro, Outro e habilidades inerentes.
+  - Histórico de Convene local com normalização dos resultados, banners
+    dinâmicos e reutilização dos ícones do catálogo.
   - Integração de auto-formatação no Wails e hooks do Git.
 
 ## Como atualizar este arquivo
