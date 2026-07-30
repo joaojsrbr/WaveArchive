@@ -39,7 +39,7 @@ export function CharacterDetail({
   const [accountDraft, setAccountDraft] = useState<CharacterAccountUpdate>();
   const [savingAccount, setSavingAccount] = useState(false);
   const character = profile.character;
-  const kitFocused = tab === 'kit' || tab === 'forte' || tab === 'tree';
+  const showKitTree = tab === 'kit' || tab === 'forte' || tab === 'tree';
 
   function openAccountEditor() {
     setAccountDraft({
@@ -64,7 +64,7 @@ export function CharacterDetail({
   }
 
   return (
-    <div className={`detailPage${kitFocused ? ' kitFocused' : ''}`}>
+    <div className="detailPage">
       <button className="backButton" onClick={onBack}>
         ← Voltar ao catálogo
       </button>
@@ -156,7 +156,7 @@ export function CharacterDetail({
       </nav>
 
       {tab === 'overview' && <Overview profile={profile} />}
-      {kitFocused && <ResonanceKitTree profile={profile} />}
+      {showKitTree && <ResonanceKitTree profile={profile} />}
       {tab === 'chains' && <Chains profile={profile} />}
       {tab === 'materials' && <Materials profile={profile} />}
       {tab === 'stats' && <Stats profile={profile} />}

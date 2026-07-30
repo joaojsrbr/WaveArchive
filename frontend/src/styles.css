@@ -952,6 +952,1242 @@ select {
   }
 }
 
+/* Convene history */
+.convenePage {
+  --convene-gold: #e7bf69;
+  --convene-violet: #b58af0;
+  --convene-blue: #6daff0;
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.conveneHero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.conveneHero h1 {
+  font-size: clamp(34px, 4.2vw, 58px);
+}
+
+.conveneHero p {
+  max-width: 680px;
+  margin: 10px 0 0;
+  color: var(--secondary);
+  font-size: 13px;
+}
+
+.conveneTitleLine {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.convenePrivacyBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--cyan);
+  font-family: Consolas, monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.conveneHeroActions,
+.conveneImportDialog footer {
+  display: flex;
+  gap: 9px;
+}
+
+.convenePrimaryButton,
+.conveneSecondaryButton,
+.conveneDangerButton {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 16px;
+  border: 1px solid rgba(103, 220, 227, 0.42);
+  background: rgba(103, 220, 227, 0.09);
+  color: #d7fcff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.convenePrimaryButton {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  color: #071014;
+}
+
+.convenePrimaryButton:hover:not(:disabled) {
+  background: #8ce8ed;
+}
+
+.conveneSecondaryButton:hover:not(:disabled) {
+  background: rgba(103, 220, 227, 0.15);
+}
+
+.conveneDangerButton {
+  border-color: rgba(239, 113, 129, 0.4);
+  background: rgba(239, 113, 129, 0.06);
+  color: #ef9ca7;
+}
+
+.conveneDangerButton:hover:not(:disabled) {
+  border-color: rgba(239, 113, 129, 0.7);
+  background: rgba(239, 113, 129, 0.12);
+  color: #ffdce1;
+}
+
+.convenePrimaryButton:disabled,
+.conveneSecondaryButton:disabled,
+.conveneDangerButton:disabled {
+  opacity: 0.48;
+  cursor: wait;
+}
+
+.conveneNotice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-left: 2px solid #86d69a;
+  background: rgba(134, 214, 154, 0.06);
+  color: #bfe9c9;
+  font-size: 11px;
+}
+
+.conveneNotice button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.conveneSummaryRibbon {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  background: rgba(17, 24, 33, 0.66);
+}
+
+.conveneMetric {
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 22px;
+  border-right: 1px solid var(--border);
+}
+
+.conveneMetric:last-child {
+  border-right: 0;
+}
+
+.conveneMetric > span {
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.conveneMetric > strong {
+  margin-top: 7px;
+  color: var(--text);
+  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
+  font-size: clamp(21px, 2vw, 30px);
+  line-height: 1;
+}
+
+.conveneMetric > small {
+  margin-top: 7px;
+  color: var(--secondary);
+  font-size: 10px;
+}
+
+.conveneMetric.five > strong {
+  color: var(--convene-gold);
+}
+
+.conveneMetric.four > strong {
+  color: var(--convene-violet);
+}
+
+.conveneMetric.sync > strong {
+  color: var(--cyan);
+  font-size: clamp(17px, 1.5vw, 23px);
+}
+
+.conveneTimelineSection {
+  padding: 22px;
+  border: 1px solid var(--border);
+  background: rgba(17, 24, 33, 0.42);
+}
+
+.conveneSectionHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.conveneSectionHeading h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.conveneSectionHeading > span {
+  color: var(--secondary);
+  font-family: Consolas, monospace;
+  font-size: 9px;
+}
+
+.conveneTimelineBanner {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 11px;
+  border: 1px solid rgba(231, 191, 105, 0.24);
+  background: rgba(231, 191, 105, 0.045);
+  color: #d8c38f !important;
+  letter-spacing: 0.04em;
+}
+
+.conveneTimeline {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(160px, 1fr));
+  gap: 0;
+  min-height: 238px;
+  overflow: hidden;
+}
+
+.conveneMilestone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 238px;
+  padding: 0 10px;
+}
+
+.conveneMilestone::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 177px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(103, 220, 227, 0.3);
+}
+
+.conveneMilestone:first-child::after {
+  left: 50%;
+}
+
+.conveneMilestone:last-child::after {
+  right: 50%;
+}
+
+.conveneMilestoneCard {
+  width: min(100%, 174px);
+  min-height: 146px;
+  padding: 11px;
+  border: 1px solid rgba(231, 191, 105, 0.2);
+  background: rgba(7, 13, 19, 0.6);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.conveneMilestone:hover .conveneMilestoneCard {
+  border-color: rgba(231, 191, 105, 0.48);
+  background: rgba(21, 25, 29, 0.82);
+  transform: translateY(-2px);
+}
+
+.conveneMilestoneIdentity {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.conveneMilestoneIdentity > .conveneItemPortrait {
+  width: 58px;
+  height: 72px;
+  border-color: rgba(231, 191, 105, 0.52);
+  background: rgba(231, 191, 105, 0.055);
+}
+
+.conveneMilestoneIdentity > div {
+  min-width: 0;
+}
+
+.conveneMilestoneCard strong,
+.conveneMilestoneCard small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conveneMilestoneIdentity span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--convene-gold);
+  font-family: Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.conveneMilestoneCard strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.conveneMilestoneCard > small {
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.conveneMilestonePity {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.conveneMilestonePity > span {
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+}
+
+.conveneMilestonePity > strong {
+  color: var(--convene-gold);
+  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.conveneMilestoneMarker {
+  position: relative;
+  z-index: 1;
+  width: 1px;
+  height: 31px;
+  background: rgba(231, 191, 105, 0.75);
+}
+
+.conveneMilestoneMarker > svg {
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  color: var(--convene-gold);
+  background: var(--bg-base);
+  transform: translateX(-50%);
+}
+
+.conveneMilestoneDate {
+  width: min(100%, 174px);
+  padding-top: 13px;
+  color: var(--secondary);
+  font-family: Consolas, monospace;
+  text-align: center;
+}
+
+.conveneMilestoneDate > strong {
+  display: block;
+  color: var(--text);
+  font-size: 9px;
+}
+
+.conveneMilestoneDate > div {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.conveneTimelineEmpty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 74px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.conveneWorkspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(278px, 24%);
+  align-items: start;
+  border: 1px solid var(--border);
+  background: rgba(12, 17, 25, 0.62);
+}
+
+.conveneLedger {
+  min-width: 0;
+  border-right: 1px solid var(--border);
+}
+
+.conveneFilters {
+  display: grid;
+  grid-template-columns: minmax(230px, 1fr) 128px 138px 154px auto;
+  gap: 8px;
+  align-items: end;
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.conveneFilters label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.conveneFilters select,
+.conveneSearch {
+  height: 38px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text);
+}
+
+.conveneFilters select {
+  min-width: 0;
+  padding: 0 28px 0 10px;
+  color-scheme: dark;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.conveneSearch {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 9px !important;
+  padding: 0 11px;
+  color: var(--muted) !important;
+}
+
+.conveneSearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.conveneClearFilters {
+  height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.conveneClearFilters:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.conveneTableWrap {
+  min-width: 0;
+}
+
+.conveneTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.conveneTable th {
+  height: 34px;
+  padding: 0 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.11em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.conveneTable th:nth-child(1) {
+  width: 122px;
+}
+
+.conveneTable th:nth-child(3) {
+  width: 120px;
+}
+
+.conveneTable th:nth-child(4) {
+  width: 112px;
+}
+
+.conveneTable th:nth-child(5) {
+  width: 60px;
+}
+
+.conveneTable td {
+  height: 55px;
+  padding: 6px 13px;
+  border-bottom: 1px solid rgba(151, 202, 213, 0.08);
+  color: var(--secondary);
+  font-size: 10px;
+  vertical-align: middle;
+}
+
+.conveneTable tbody tr:hover {
+  background: rgba(103, 220, 227, 0.035);
+}
+
+.conveneTable td:first-child strong,
+.conveneTable td:first-child span {
+  display: block;
+}
+
+.conveneTable td:first-child strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.conveneTable td:first-child span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+}
+
+.conveneTable td:nth-child(2) {
+  min-width: 0;
+}
+
+.conveneItemCell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.conveneItemCell > span:last-child {
+  min-width: 0;
+}
+
+.conveneItemCell strong,
+.conveneItemCell small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conveneItemCell strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.conveneItemCell small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.conveneTable td:nth-child(3) {
+  color: var(--secondary);
+}
+
+.conveneTable td:nth-child(3) svg {
+  margin-right: 6px;
+  vertical-align: -3px;
+}
+
+.conveneTable tr.rarity-5 td:nth-child(2) strong,
+.conveneTable tr.rarity-5 td:last-child strong {
+  color: var(--convene-gold);
+}
+
+.conveneItemPortrait {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.conveneItemPortrait.rarity-5 {
+  border-color: rgba(231, 191, 105, 0.5);
+  color: var(--convene-gold);
+}
+
+.conveneItemPortrait.rarity-4 {
+  border-color: rgba(181, 138, 240, 0.45);
+  color: var(--convene-violet);
+}
+
+.conveneItemPortrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.conveneStars {
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+
+.conveneStars.stars-5 {
+  color: var(--convene-gold);
+}
+
+.conveneStars.stars-4 {
+  color: var(--convene-violet);
+}
+
+.conveneStars.stars-3 {
+  color: var(--convene-blue);
+}
+
+.convenePagination {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 9px;
+}
+
+.convenePagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.convenePagination button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+}
+
+.convenePagination button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.convenePagination strong {
+  color: var(--text);
+  font-weight: 400;
+}
+
+.conveneLedgerEmpty {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.conveneLedgerEmpty strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.conveneLedgerEmpty span {
+  font-size: 10px;
+}
+
+.conveneInspector {
+  min-width: 0;
+}
+
+.convenePoolInspector {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.convenePoolInspector h2 {
+  margin: 6px 0 3px;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.convenePoolInspector > small {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.convenePity {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.convenePity > div {
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.convenePity > div + div {
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+
+.convenePity span {
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.convenePity strong {
+  margin-top: 6px;
+  color: var(--cyan);
+  font-family: 'Arial Narrow', 'Segoe UI', sans-serif;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.convenePity strong small {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.conveneGuarantee strong {
+  color: var(--convene-gold);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.convenePityBar {
+  height: 3px;
+  margin: 12px 0 18px;
+  overflow: hidden;
+  background: rgba(103, 220, 227, 0.1);
+}
+
+.convenePityBar i {
+  display: block;
+  height: 100%;
+  background: var(--cyan);
+}
+
+.conveneDistribution {
+  display: grid;
+  gap: 9px;
+}
+
+.conveneDistributionRow {
+  display: grid;
+  grid-template-columns: 68px minmax(40px, 1fr) 24px 34px;
+  align-items: center;
+  gap: 7px;
+  color: var(--secondary);
+  font-size: 8px;
+}
+
+.conveneDistributionRow > i {
+  height: 4px;
+  overflow: hidden;
+  background: rgba(151, 202, 213, 0.09);
+}
+
+.conveneDistributionRow > i b {
+  display: block;
+  height: 100%;
+  background: var(--convene-blue);
+}
+
+.conveneDistributionRow.rarity-5 > i b {
+  background: var(--convene-gold);
+}
+
+.conveneDistributionRow.rarity-4 > i b {
+  background: var(--convene-violet);
+}
+
+.conveneDistributionRow strong {
+  color: var(--text);
+  text-align: right;
+}
+
+.conveneDistributionRow small {
+  color: var(--muted);
+  text-align: right;
+}
+
+.conveneDisclosure,
+.convenePartial {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--secondary);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.conveneDisclosure svg,
+.convenePartial svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--cyan);
+}
+
+.conveneDisclosure strong {
+  color: var(--text);
+}
+
+.convenePartial {
+  color: #d5b77b;
+}
+
+.convenePartial svg {
+  color: var(--convene-gold);
+}
+
+.conveneBannerSelectorTitle {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 15px 9px;
+  color: var(--cyan);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+.conveneBannerSelectorTitle small {
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0;
+}
+
+.conveneBannerList {
+  display: grid;
+}
+
+.conveneBannerList button {
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px;
+  border: 0;
+  border-top: 1px solid rgba(151, 202, 213, 0.07);
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.conveneBannerList button:hover {
+  background: rgba(103, 220, 227, 0.035);
+}
+
+.conveneBannerList button.selected {
+  border-left-color: var(--cyan);
+  background: rgba(103, 220, 227, 0.07);
+  color: var(--cyan);
+}
+
+.conveneBannerList button > span {
+  min-width: 0;
+}
+
+.conveneBannerList strong,
+.conveneBannerList small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conveneBannerList strong {
+  color: var(--text);
+  font-size: 9px;
+}
+
+.conveneBannerList small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.conveneBannerList b {
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 8px;
+  font-weight: 400;
+  text-align: right;
+}
+
+.conveneEmpty,
+.conveneLoading {
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  text-align: center;
+}
+
+.conveneEmpty > div {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+  border: 1px solid rgba(103, 220, 227, 0.3);
+  color: var(--cyan);
+  transform: rotate(45deg);
+}
+
+.conveneEmpty > div svg {
+  transform: rotate(-45deg);
+}
+
+.conveneEmpty h2 {
+  margin: 7px 0;
+  color: var(--text);
+  font-size: 24px;
+}
+
+.conveneEmpty p {
+  max-width: 540px;
+  margin: 0 0 20px;
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.conveneModalBackdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 6, 9, 0.78);
+  backdrop-filter: blur(7px);
+}
+
+.conveneImportDialog {
+  width: min(620px, 100%);
+  border: 1px solid rgba(103, 220, 227, 0.25);
+  background: var(--bg-base);
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
+}
+
+.conveneImportDialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.conveneImportDialog h2 {
+  margin: 6px 0 0;
+  font-size: 24px;
+}
+
+.conveneImportDialog > header > button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+}
+
+.conveneImportDialog > p {
+  margin: 0;
+  padding: 18px 22px 2px;
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.conveneImportOptions {
+  display: grid;
+  gap: 8px;
+  padding: 16px 22px 22px;
+}
+
+.conveneImportOptions > button {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--cyan);
+  cursor: pointer;
+  text-align: left;
+}
+
+.conveneImportOptions > button:hover:not(:disabled) {
+  border-color: rgba(103, 220, 227, 0.42);
+  background: var(--surface-hover);
+}
+
+.conveneImportOptions strong,
+.conveneImportOptions small {
+  display: block;
+}
+
+.conveneImportOptions strong {
+  color: var(--text);
+  font-size: 11px;
+}
+
+.conveneImportOptions small {
+  margin-top: 5px;
+  color: var(--secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.conveneURLField {
+  display: grid;
+  gap: 7px;
+  padding: 20px 22px 10px;
+  color: var(--secondary);
+  font-size: 10px;
+}
+
+.conveneURLField textarea {
+  resize: vertical;
+  min-height: 112px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  outline: 0;
+  background: var(--surface-1);
+  color: var(--text);
+  font-family: Consolas, monospace;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.conveneURLField textarea:focus {
+  border-color: var(--cyan);
+}
+
+.conveneTokenNote {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 22px;
+  padding: 10px 12px;
+  border-left: 2px solid var(--cyan);
+  background: rgba(103, 220, 227, 0.045);
+  color: var(--secondary);
+  font-size: 9px;
+}
+
+.conveneImportDialog footer {
+  justify-content: flex-end;
+  margin-top: 18px;
+  padding: 14px 22px;
+  border-top: 1px solid var(--border);
+}
+
+.conveneImporting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 22px 20px;
+  color: var(--cyan);
+  font-size: 10px;
+}
+
+@media (max-width: 1320px) {
+  .conveneTimeline {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 18px 0;
+    overflow: visible;
+  }
+
+  .conveneMilestone::after {
+    display: none;
+  }
+
+  .conveneFilters {
+    grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(112px, 0.45fr));
+  }
+
+  .conveneClearFilters {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 1200px) {
+  .conveneHero {
+    align-items: flex-start;
+  }
+
+  .conveneSummaryRibbon {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conveneMetric:nth-child(2) {
+    border-right: 0;
+  }
+
+  .conveneMetric:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .conveneWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .conveneLedger {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .conveneInspector {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .convenePoolInspector {
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+
+  .conveneBannerList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .conveneHero {
+    display: grid;
+  }
+
+  .conveneHeroActions {
+    width: 100%;
+  }
+
+  .conveneHeroActions > button {
+    flex: 1;
+  }
+
+  .conveneSummaryRibbon,
+  .conveneTimeline,
+  .conveneInspector,
+  .conveneBannerList {
+    grid-template-columns: 1fr;
+  }
+
+  .conveneMetric {
+    min-height: 88px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .conveneMetric:last-child {
+    border-bottom: 0;
+  }
+
+  .conveneFilters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .conveneSearch {
+    grid-column: 1 / -1;
+  }
+
+  .conveneClearFilters {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .conveneTable th:nth-child(1) {
+    width: 92px;
+  }
+
+  .conveneTable th:nth-child(3) {
+    display: none;
+  }
+
+  .conveneTable td:nth-child(3) {
+    display: none;
+  }
+
+  .convenePoolInspector {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
 .tableWrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -1067,14 +2303,73 @@ tbody tr:hover {
 }
 
 .errorBanner {
+  position: fixed;
+  top: 82px;
+  right: 22px;
+  z-index: 1200;
+  width: min(420px, calc(100vw - 44px));
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 11px 14px;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 0;
+  padding: 13px 12px 13px 14px;
   border: 1px solid rgba(239, 113, 129, 0.35);
-  background: rgba(239, 113, 129, 0.08);
-  color: #eeb4bb;
+  border-left: 2px solid #ef7181;
+  background: rgba(17, 20, 27, 0.97);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38);
+  color: #ef8b98;
+}
+
+.errorBanner > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.errorBanner > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.errorBanner strong {
+  color: #f4d9dd;
   font-size: 11px;
+  font-weight: 650;
+}
+
+.errorBanner small {
+  overflow-wrap: anywhere;
+  color: #c99ba2;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.errorBanner button {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  margin: -5px -4px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #b9878e;
+  cursor: pointer;
+}
+
+.errorBanner button:hover {
+  background: rgba(239, 113, 129, 0.1);
+  color: #ffdce1;
+}
+
+@media (max-width: 720px) {
+  .errorBanner {
+    top: 70px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
 }
 
 .skeleton {
@@ -10114,62 +11409,6 @@ h1 {
 }
 
 /* Kit & Árvore — Forte Meridian */
-.detailPage.kitFocused > .backButton {
-  margin-bottom: 8px;
-}
-
-.detailPage.kitFocused > .characterHero {
-  min-height: 190px;
-  grid-template-columns: 180px minmax(360px, 1fr) 190px;
-}
-
-.detailPage.kitFocused > .characterHero::after {
-  inset: 10px;
-}
-
-.detailPage.kitFocused .heroArt {
-  font-size: 76px;
-}
-
-.detailPage.kitFocused .heroArt img {
-  width: min(82%, 170px);
-  height: 176px;
-}
-
-.detailPage.kitFocused .heroContent {
-  padding: 22px 28px;
-}
-
-.detailPage.kitFocused .heroContent h1 {
-  font-size: clamp(38px, 4vw, 52px);
-}
-
-.detailPage.kitFocused .heroNickname {
-  margin-bottom: 9px;
-}
-
-.detailPage.kitFocused .heroDescription {
-  max-width: 580px;
-  margin: 9px 0 12px;
-  line-height: 1.45;
-}
-
-.detailPage.kitFocused .heroActions button {
-  padding: 7px 10px;
-}
-
-.detailPage.kitFocused .heroMeta {
-  padding: 20px;
-}
-
-.detailPage.kitFocused > .detailTabs {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding: 0 24px;
-  border-color: rgba(221, 229, 233, 0.1);
-  background: #07101a;
-}
-
 .forteMeridian {
   position: relative;
   isolation: isolate;

@@ -439,6 +439,40 @@ func reconcileLegacySchema(db *sql.DB) error {
 			return err
 		}
 	}
+	hasConveneHistory, err := tableExists(db, "convene_profiles")
+	if err != nil {
+		return err
+	}
+	if hasConveneHistory {
+		if _, err := db.Exec(`
+			CREATE TABLE IF NOT EXISTS convene_pool_catalog (
+				profile_id INTEGER NOT NULL,
+				pool_type INTEGER NOT NULL,
+				locale_key TEXT NOT NULL,
+				name TEXT NOT NULL,
+				short_name TEXT NOT NULL,
+				kind TEXT NOT NULL,
+				hard_pity INTEGER NOT NULL DEFAULT 80,
+				sort_order INTEGER NOT NULL DEFAULT 0,
+				updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				PRIMARY KEY(profile_id, pool_type),
+				FOREIGN KEY(profile_id) REFERENCES convene_profiles(id) ON DELETE CASCADE
+			);
+			CREATE INDEX IF NOT EXISTS convene_pulls_profile_time_idx
+				ON convene_pulls(profile_id, obtained_at DESC, source_index ASC, id DESC);
+			CREATE INDEX IF NOT EXISTS convene_pulls_pool_time_idx
+				ON convene_pulls(profile_id, pool_type, obtained_at DESC, source_index ASC);
+			CREATE INDEX IF NOT EXISTS convene_pulls_rarity_idx
+				ON convene_pulls(profile_id, rarity, obtained_at DESC);
+			CREATE INDEX IF NOT EXISTS convene_pool_catalog_order_idx
+				ON convene_pool_catalog(profile_id, sort_order, pool_type);
+		`); err != nil {
+			return err
+		}
+		if err := markMigration(db, "0016_convene_history.sql"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

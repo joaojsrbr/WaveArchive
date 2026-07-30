@@ -8,6 +8,7 @@ import {
   Database,
   Gauge,
   Grid3X3,
+  History,
   List,
   PackageOpen,
   RefreshCw,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   Star,
   Swords,
+  TriangleAlert,
   UserRound,
   UsersRound,
   Waves,
@@ -30,6 +32,7 @@ import { TeamsPage } from './TeamsPage';
 import { CalculatorPage } from './CalculatorPage';
 import { AssistantPage } from './AssistantPage';
 import { AccountPage, DashboardPage, SettingsPage } from './WorkspacePages';
+import { ConvenePage } from './ConvenePage';
 import { AdvancedFilters, FilterField, FilterRange } from './AdvancedFilters';
 import { GlobalSearch } from './GlobalSearch';
 import {
@@ -59,6 +62,7 @@ type PageID =
   | 'teams'
   | 'builds'
   | 'calculator'
+  | 'convene'
   | 'account'
   | 'ai'
   | 'settings';
@@ -72,6 +76,7 @@ const navItems: { id: PageID; label: string }[] = [
   { id: 'teams', label: 'Equipes' },
   { id: 'builds', label: 'Builds' },
   { id: 'calculator', label: 'Calculadora' },
+  { id: 'convene', label: 'Histórico de Convene' },
   { id: 'account', label: 'Minha conta' },
   { id: 'ai', label: 'Assistente IA' },
   { id: 'settings', label: 'Configurações' },
@@ -81,7 +86,7 @@ const navGroups: { label: string; items: PageID[] }[] = [
   { label: 'Arquivo', items: ['characters', 'weapons', 'echoes', 'sonata'] },
   { label: 'Planejamento', items: ['teams', 'builds'] },
   { label: 'Análise', items: ['calculator'] },
-  { label: 'Conta', items: ['account', 'ai', 'settings'] },
+  { label: 'Conta', items: ['account', 'convene', 'ai', 'settings'] },
 ];
 
 const pageIcons: Record<PageID, typeof Gauge> = {
@@ -93,6 +98,7 @@ const pageIcons: Record<PageID, typeof Gauge> = {
   teams: UsersRound,
   builds: ShieldCheck,
   calculator: Calculator,
+  convene: History,
   account: Database,
   ai: Bot,
   settings: Settings,
@@ -404,8 +410,14 @@ export function App() {
         >
           {error && (
             <div className="errorBanner" role="alert">
-              <strong>Não foi possível concluir.</strong>
-              {error}
+              <TriangleAlert size={18} aria-hidden="true" />
+              <span>
+                <strong>Não foi possível concluir</strong>
+                <small>{error}</small>
+              </span>
+              <button type="button" aria-label="Fechar aviso de erro" onClick={() => setError('')}>
+                <X size={15} />
+              </button>
             </div>
           )}
           {page === 'characters' ? (
@@ -596,6 +608,8 @@ export function App() {
             <BuildsPage version={status.version} onError={setError} />
           ) : page === 'calculator' ? (
             <CalculatorPage onError={setError} />
+          ) : page === 'convene' ? (
+            <ConvenePage onError={setError} />
           ) : page === 'account' ? (
             <AccountPage onError={setError} />
           ) : page === 'ai' ? (

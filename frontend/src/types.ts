@@ -601,6 +601,65 @@ export type ConveneRecord = {
   obtainedAt: string;
   notes: string;
 };
+export type ConveneProfile = {
+  id: number;
+  playerId: string;
+  serverId: string;
+  region: string;
+  languageCode: string;
+  lastImportedAt: string;
+  historyPartial: boolean;
+};
+export type ConvenePull = {
+  id: number;
+  profileId: number;
+  poolType: number;
+  poolName: string;
+  resourceId: string;
+  resourceType: string;
+  itemName: string;
+  rarity: number;
+  quantity: number;
+  obtainedAt: string;
+  sourceIndex: number;
+  iconPath: string;
+};
+export type ConvenePoolSummary = {
+  poolType: number;
+  name: string;
+  shortName: string;
+  kind: string;
+  total: number;
+  count5: number;
+  count4: number;
+  count3: number;
+  currentPity: number;
+  hardPity: number;
+  currentPity4: number;
+  averagePity5: number;
+  guaranteeState: 'guaranteed' | 'not_guaranteed' | 'not_applicable' | 'unknown';
+  historyPartial: boolean;
+  recentFiveStar: ConvenePull[];
+};
+export type ConveneOverview = {
+  profile?: ConveneProfile;
+  pools: ConvenePoolSummary[];
+  pulls: ConvenePull[];
+  total: number;
+  count5: number;
+  count4: number;
+  count3: number;
+  lastImportedAt: string;
+};
+export type ConveneImportResult = {
+  imported: number;
+  duplicates: number;
+  poolsUpdated: number;
+  profile: ConveneProfile;
+  overview: ConveneOverview;
+  source: string;
+  historyPartial: boolean;
+};
 export type Enemy = {
   id: number;
   name: string;
@@ -718,6 +777,11 @@ export type BackendAPI = {
   ListEnemies(): Promise<Enemy[]>;
   ListFormulaVersions(): Promise<FormulaVersion[]>;
   DashboardSummary(): Promise<DashboardSummary>;
+  GetConveneOverview(): Promise<ConveneOverview>;
+  DeleteConveneHistory(): Promise<void>;
+  ImportConveneURL(url: string): Promise<ConveneImportResult>;
+  ImportConveneFromGame(): Promise<ConveneImportResult>;
+  ImportConveneFromLogFile(): Promise<ConveneImportResult>;
   ExportArchive(): Promise<string>;
   ImportArchive(payload: string): Promise<ArchiveReport>;
   CreateManualBackup(): Promise<string>;

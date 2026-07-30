@@ -13,6 +13,8 @@ import type {
   CharacterAccountUpdate,
   CharacterFilter,
   CharacterProfile,
+  ConveneImportResult,
+  ConveneOverview,
   DamageInput,
   DamageResult,
   Echo,
@@ -37,6 +39,130 @@ import {
 } from './previewData';
 
 const emptyStatus: CatalogStatus = { count: 0, version: '' };
+const previewConveneOverview: ConveneOverview = {
+  profile: {
+    id: 1,
+    playerId: '500••••••',
+    serverId: '6',
+    region: 'global',
+    languageCode: 'pt',
+    lastImportedAt: '2026-07-29 14:22:00',
+    historyPartial: true,
+  },
+  pools: [
+    {
+      poolType: 1,
+      name: 'Evento de Ressonador',
+      shortName: 'Ressonador',
+      kind: 'featured_character',
+      total: 128,
+      count5: 2,
+      count4: 15,
+      count3: 111,
+      currentPity: 67,
+      hardPity: 80,
+      currentPity4: 7,
+      averagePity5: 73,
+      guaranteeState: 'not_guaranteed',
+      historyPartial: false,
+      recentFiveStar: [],
+    },
+    {
+      poolType: 2,
+      name: 'Evento de Arma',
+      shortName: 'Arma',
+      kind: 'featured_weapon',
+      total: 52,
+      count5: 1,
+      count4: 6,
+      count3: 45,
+      currentPity: 18,
+      hardPity: 80,
+      currentPity4: 2,
+      averagePity5: 0,
+      guaranteeState: 'not_applicable',
+      historyPartial: false,
+      recentFiveStar: [],
+    },
+    ...[
+      [3, 'Ressonador Permanente', 'Permanente'],
+      [4, 'Arma Permanente', 'Arma padrão'],
+      [5, 'Convene de Novato', 'Novato'],
+      [6, 'Escolha do Iniciante', 'Escolha'],
+      [8, 'Nova Viagem · Ressonador', 'Nova Viagem'],
+      [9, 'Nova Viagem · Arma', 'NV Arma'],
+      [10, 'Colaboração · Ressonador', 'Colab.'],
+      [11, 'Colaboração · Arma', 'Colab. Arma'],
+      [12, 'Reverberação · Ressonador', 'Reverberação'],
+      [13, 'Reverberação · Arma', 'Reverb. Arma'],
+    ].map(([poolType, name, shortName]) => ({
+      poolType: Number(poolType),
+      name: String(name),
+      shortName: String(shortName),
+      kind: 'other',
+      total: 0,
+      count5: 0,
+      count4: 0,
+      count3: 0,
+      currentPity: 0,
+      hardPity: Number(poolType) === 5 ? 50 : 80,
+      currentPity4: 0,
+      averagePity5: 0,
+      guaranteeState: 'not_applicable' as const,
+      historyPartial: true,
+      recentFiveStar: [],
+    })),
+  ],
+  pulls: [
+    {
+      id: 1,
+      profileId: 1,
+      poolType: 1,
+      poolName: 'Evento de Ressonador',
+      resourceId: '1505',
+      resourceType: 'Resonator',
+      itemName: 'Shorekeeper',
+      rarity: 5,
+      quantity: 1,
+      obtainedAt: '2026-07-28 21:14:00',
+      sourceIndex: 0,
+      iconPath: '',
+    },
+    {
+      id: 2,
+      profileId: 1,
+      poolType: 1,
+      poolName: 'Evento de Ressonador',
+      resourceId: '21020043',
+      resourceType: 'Weapon',
+      itemName: 'Comet Flare',
+      rarity: 4,
+      quantity: 1,
+      obtainedAt: '2026-07-28 21:13:00',
+      sourceIndex: 1,
+      iconPath: '',
+    },
+    ...Array.from({ length: 24 }, (_, index) => ({
+      id: index + 3,
+      profileId: 1,
+      poolType: index % 4 === 0 ? 2 : 1,
+      poolName: index % 4 === 0 ? 'Evento de Arma' : 'Evento de Ressonador',
+      resourceId: String(3000 + index),
+      resourceType: index % 3 === 0 ? 'Weapon' : 'Resonator',
+      itemName: index % 3 === 0 ? 'Broadblade of Night' : 'Item de 3 estrelas',
+      rarity: index % 7 === 0 ? 4 : 3,
+      quantity: 1,
+      obtainedAt: `2026-07-${String(27 - Math.floor(index / 8)).padStart(2, '0')} 20:${String(58 - index).padStart(2, '0')}:00`,
+      sourceIndex: index + 2,
+      iconPath: '',
+    })),
+  ],
+  total: 180,
+  count5: 3,
+  count4: 21,
+  count3: 156,
+  lastImportedAt: '2026-07-29 14:22:00',
+};
 
 function api(): BackendAPI | undefined {
   return window.go?.main?.App;
@@ -317,6 +443,31 @@ export async function dashboardSummary() {
   const b = api();
   if (!b) throw new Error('Dashboard disponível no desktop.');
   return b.DashboardSummary();
+}
+export async function getConveneOverview(): Promise<ConveneOverview> {
+  const backend = api();
+  if (!backend) return previewConveneOverview;
+  return backend.GetConveneOverview();
+}
+export async function deleteConveneHistory(): Promise<void> {
+  const backend = api();
+  if (!backend) return;
+  await backend.DeleteConveneHistory();
+}
+export async function importConveneURL(url: string): Promise<ConveneImportResult> {
+  const backend = api();
+  if (!backend) throw new Error('A importação está disponível no aplicativo desktop.');
+  return backend.ImportConveneURL(url);
+}
+export async function importConveneFromGame(): Promise<ConveneImportResult> {
+  const backend = api();
+  if (!backend) throw new Error('A leitura do jogo está disponível no aplicativo desktop.');
+  return backend.ImportConveneFromGame();
+}
+export async function importConveneFromLogFile(): Promise<ConveneImportResult> {
+  const backend = api();
+  if (!backend) throw new Error('A seleção do Client.log está disponível no aplicativo desktop.');
+  return backend.ImportConveneFromLogFile();
 }
 export async function exportArchive() {
   const b = api();

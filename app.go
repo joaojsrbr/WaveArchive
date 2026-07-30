@@ -23,6 +23,7 @@ import (
 	"wavearchive/internal/httpcache"
 	"wavearchive/internal/repository"
 	arikatsusource "wavearchive/internal/sources/arikatsu"
+	convenesource "wavearchive/internal/sources/convene"
 	guidesource "wavearchive/internal/sources/guide"
 	"wavearchive/internal/sources/nanoka"
 	"wavearchive/internal/usecase"
@@ -44,6 +45,7 @@ type App struct {
 	theorycraft *usecase.TheorycraftManager
 	assistant   *usecase.AssistantService
 	workspace   *usecase.WorkspaceManager
+	convenes    *usecase.ConveneHistory
 	guides      *usecase.GuideManager
 	initErr     error
 	dataDir     string
@@ -95,6 +97,7 @@ func (a *App) initResources() error {
 	theoryRepo := repository.NewTheorycraftSQLite(db.SQL())
 	aiHistoryRepo := repository.NewAIHistorySQLite(db.SQL())
 	workspaceRepo := repository.NewWorkspaceSQLite(db.SQL())
+	conveneRepo := repository.NewConveneHistorySQLite(db.SQL())
 	guideRepo := repository.NewGuideSQLite(db.SQL())
 	cacheTransport := httpcache.NewTransport(filepath.Join(dataDir, "http-cache"), http.DefaultTransport)
 	a.httpShort = &http.Client{Timeout: 25 * time.Second, Transport: cacheTransport}
@@ -115,6 +118,8 @@ func (a *App) initResources() error {
 	a.theorycraft = usecase.NewTheorycraftManager(theoryRepo, a.evaluator)
 	a.assistant = usecase.NewAssistantService(a.ai, aiHistoryRepo, a.evaluator, repo, guideRepo)
 	a.workspace = usecase.NewWorkspaceManager(workspaceRepo)
+	conveneHTTP := &http.Client{Timeout: 35 * time.Second}
+	a.convenes = usecase.NewConveneHistory(conveneRepo, convenesource.NewClient(conveneHTTP))
 	a.guides = usecase.NewGuideManager(guideRepo, guidesource.NewClient(a.httpShort))
 	return nil
 }
@@ -341,6 +346,54 @@ func (a *App) DashboardSummary() (domain.DashboardSummary, error) {
 		summary.RecentBuilds = builds
 	}
 	return summary, nil
+}
+
+func (a *App) GetConveneOverview() (domain.ConveneOverview, error) {
+	if err := a.ready(); err != nil {
+		return domain.ConveneOverview{}, err
+	}
+	return a.convenes.Overview(a.context())
+}
+
+func (a *App) DeleteConveneHistory() error {
+	if err := a.ready(); err != nil {
+		return err
+	}
+	return a.convenes.Delete(a.context())
+}
+
+func (a *App) ImportConveneURL(rawURL string) (domain.ConveneImportResult, error) {
+	if err := a.ready(); err != nil {
+		return domain.ConveneImportResult{}, err
+	}
+	return a.convenes.ImportURL(a.context(), rawURL, "pasted_url")
+}
+
+func (a *App) ImportConveneFromGame() (domain.ConveneImportResult, error) {
+	if err := a.ready(); err != nil {
+		return domain.ConveneImportResult{}, err
+	}
+	return a.convenes.ImportFromGame(a.context())
+}
+
+func (a *App) ImportConveneFromLogFile() (domain.ConveneImportResult, error) {
+	if err := a.ready(); err != nil {
+		return domain.ConveneImportResult{}, err
+	}
+	path, err := runtime.OpenFileDialog(a.context(), runtime.OpenDialogOptions{
+		Title: "Selecionar Client.log do Wuthering Waves",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Log do Wuthering Waves", Pattern: "*.log"},
+			{DisplayName: "Todos os arquivos", Pattern: "*"},
+		},
+	})
+	if err != nil {
+		return domain.ConveneImportResult{}, err
+	}
+	if strings.TrimSpace(path) == "" {
+		return domain.ConveneImportResult{}, errors.New("nenhum arquivo foi selecionado")
+	}
+	return a.convenes.ImportLog(a.context(), path)
 }
 
 func (a *App) ListTeams() ([]domain.Team, error) {
@@ -829,6 +882,7 @@ func (a *App) restoreDatabase(snapshot string) (string, error) {
 	a.theorycraft = nil
 	a.assistant = nil
 	a.workspace = nil
+	a.convenes = nil
 	a.guides = nil
 	if err := database.RestoreFile(snapshot, a.dbPath); err != nil {
 		a.initErr = a.initResources()
@@ -888,7 +942,8 @@ func (a *App) ready() error {
 		return fmt.Errorf("application database is unavailable: %w", a.initErr)
 	}
 	if a.catalog == nil || a.weapons == nil || a.echoes == nil || a.builds == nil || a.teams == nil ||
-		a.damage == nil || a.ai == nil || a.evaluator == nil || a.theorycraft == nil || a.assistant == nil || a.workspace == nil || a.guides == nil {
+		a.damage == nil || a.ai == nil || a.evaluator == nil || a.theorycraft == nil || a.assistant == nil ||
+		a.workspace == nil || a.convenes == nil || a.guides == nil {
 		return errors.New("application is still starting")
 	}
 	return nil
