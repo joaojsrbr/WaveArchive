@@ -8,6 +8,7 @@ import type {
   Build,
   BuildConfig,
   BuildEvaluation,
+  BuildExportIcons,
   CatalogStatus,
   Character,
   CharacterAccountUpdate,
@@ -406,6 +407,11 @@ export async function syncCharacterGuides(id: number, language = 'en') {
   const b = api();
   if (!b) throw new Error('Guias disponíveis no desktop.');
   return b.SyncCharacterGuides(id, language);
+}
+export async function getBuildExportIcons(characterId: number): Promise<BuildExportIcons> {
+  const backend = api();
+  if (!backend) return { elementIconPath: '', weaponTypeIconPath: '' };
+  return backend.GetBuildExportIcons(characterId);
 }
 export async function searchLocalKnowledge(query: string, limit = 8) {
   return (await api()?.SearchLocalKnowledge(query, limit)) ?? [];

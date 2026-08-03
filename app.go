@@ -47,6 +47,7 @@ type App struct {
 	workspace   *usecase.WorkspaceManager
 	convenes    *usecase.ConveneHistory
 	guides      *usecase.GuideManager
+	guideSource *guidesource.Client
 	initErr     error
 	dataDir     string
 	dbPath      string
@@ -120,7 +121,8 @@ func (a *App) initResources() error {
 	a.workspace = usecase.NewWorkspaceManager(workspaceRepo)
 	conveneHTTP := &http.Client{Timeout: 35 * time.Second}
 	a.convenes = usecase.NewConveneHistory(conveneRepo, convenesource.NewClient(conveneHTTP))
-	a.guides = usecase.NewGuideManager(guideRepo, guidesource.NewClient(a.httpShort))
+	a.guideSource = guidesource.NewClient(a.httpShort)
+	a.guides = usecase.NewGuideManager(guideRepo, a.guideSource)
 	return nil
 }
 
@@ -548,6 +550,35 @@ func (a *App) SyncCharacterGuides(characterID int64, language string) ([]domain.
 		return nil, err
 	}
 	return a.guides.Sync(a.context(), characterID, language)
+}
+
+func (a *App) GetBuildExportIcons(characterID int64) (domain.BuildExportIcons, error) {
+	if err := a.ready(); err != nil {
+		return domain.BuildExportIcons{}, err
+	}
+	if characterID <= 0 {
+		return domain.BuildExportIcons{}, errors.New("character is required")
+	}
+	sources, err := a.guideSource.BuildExportIcons(a.context(), characterID)
+	if err != nil {
+		return domain.BuildExportIcons{}, err
+	}
+	result := domain.BuildExportIcons{}
+	if sources.ElementURL != "" && sources.ElementID != "" {
+		local, cacheErr := a.assets.Ensure(a.context(), sources.ElementURL, filepath.Join("attributes", "elements", sources.ElementID+".png"))
+		if cacheErr != nil {
+			return domain.BuildExportIcons{}, cacheErr
+		}
+		result.ElementIconPath = local
+	}
+	if sources.WeaponTypeURL != "" && sources.WeaponTypeID != "" {
+		local, cacheErr := a.assets.Ensure(a.context(), sources.WeaponTypeURL, filepath.Join("attributes", "weapon-types", sources.WeaponTypeID+".png"))
+		if cacheErr != nil {
+			return domain.BuildExportIcons{}, cacheErr
+		}
+		result.WeaponTypeIconPath = local
+	}
+	return result, nil
 }
 func (a *App) SearchLocalKnowledge(query string, limit int) ([]domain.KnowledgeSource, error) {
 	if err := a.ready(); err != nil {

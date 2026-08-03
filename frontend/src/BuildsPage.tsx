@@ -3,6 +3,7 @@ import {
   Check,
   ChevronRight,
   Copy,
+  ImageDown,
   Lock,
   Plus,
   Save,
@@ -34,12 +35,25 @@ import { isRoverCharacter } from './lib/characters';
 import { buildSonataProgress, type SonataProgressItem } from './lib/sonata';
 import { FilterField, FilterRange } from './AdvancedFilters';
 import { LibraryFilterBar } from './LibraryFilterBar';
+import { BuildExportCard } from './BuildExportCard';
 import type { Build, Character, Echo, OwnedEcho, Sonata, Weapon } from './types';
 
 type Target = { kind: 'character' } | { kind: 'weapon' } | { kind: 'echo'; slot: number };
 type EchoSubstatChoice = { key: string; label: string; values: readonly string[] };
 type ParsedEchoSubstat = { key: string; value: string };
 type EchoLibrarySource = 'catalog' | 'inventory';
+
+const buildSkillFields: ReadonlyArray<{
+  key:
+    'normalAttackLevel' | 'resonanceSkillLevel' | 'forteLevel' | 'liberationLevel' | 'introLevel';
+  label: string;
+}> = [
+  { key: 'normalAttackLevel', label: 'Ataque Normal' },
+  { key: 'resonanceSkillLevel', label: 'Habilidade' },
+  { key: 'forteLevel', label: 'Forte' },
+  { key: 'liberationLevel', label: 'Liberação' },
+  { key: 'introLevel', label: 'Intro' },
+];
 
 const characterFilter = {
   query: '',
@@ -144,6 +158,7 @@ export function BuildsPage({
   const [signatureWeaponID, setSignatureWeaponID] = useState<number>();
   const [saving, setSaving] = useState(false);
   const [deletedID, setDeletedID] = useState<number>();
+  const [exportOpen, setExportOpen] = useState(false);
 
   async function load(selectID?: number) {
     try {
@@ -516,6 +531,10 @@ export function BuildsPage({
     }
   }
 
+  async function openExport() {
+    if (await submit()) setExportOpen(true);
+  }
+
   async function duplicate(id: number) {
     try {
       const copy = await duplicateBuild(id);
@@ -709,6 +728,32 @@ export function BuildsPage({
           </button>
         </section>
 
+        <section className="buildSkillEditor" aria-labelledby="build-skills-title">
+          <header>
+            <div>
+              <span className="sectionLabel">NÍVEIS DE HABILIDADE</span>
+              <h2 id="build-skills-title">Progressão da build</h2>
+            </div>
+            <small>Use 0 quando a habilidade ainda não foi informada.</small>
+          </header>
+          <div>
+            {buildSkillFields.map(({ key, label }) => (
+              <label key={key}>
+                <span>{label}</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={10}
+                  value={draft[key]}
+                  onChange={(event) =>
+                    setDraft({ ...draft, [key]: clamp(Number(event.target.value), 0, 10) })
+                  }
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+
         <section className="echoLoadout">
           <header>
             <div>
@@ -788,6 +833,14 @@ export function BuildsPage({
           <button onClick={newBuild}>
             <X size={15} />
             Limpar
+          </button>
+          <button
+            disabled={!canSave}
+            onClick={() => void openExport()}
+            title="Salvar os dados atuais e exportar o card em PNG"
+          >
+            <ImageDown size={15} />
+            Salvar e exportar
           </button>
           <button className="saveTeamButton" disabled={!canSave} onClick={() => void submit()}>
             <Save size={15} />
@@ -1296,6 +1349,15 @@ export function BuildsPage({
           </button>
         </div>
       )}
+      {exportOpen && draft.id > 0 && (
+        <BuildExportCard
+          build={draft}
+          character={character}
+          sonatas={sonatas}
+          onClose={() => setExportOpen(false)}
+          onError={onError}
+        />
+      )}
     </div>
   );
 }
@@ -1734,6 +1796,11 @@ function emptyBuild(version: string): Build {
     weaponIcon: '',
     weaponLevel: 90,
     weaponRank: 1,
+    normalAttackLevel: 0,
+    resonanceSkillLevel: 0,
+    forteLevel: 0,
+    liberationLevel: 0,
+    introLevel: 0,
     echoes: [],
     targetEnemyId: undefined,
     rotationId: undefined,
@@ -1748,7 +1815,16 @@ function emptyBuild(version: string): Build {
 }
 
 function normalizeBuild(build: Build): Build {
-  return { ...build, echoes: build.echoes ?? [], rotationId: undefined };
+  return {
+    ...build,
+    normalAttackLevel: build.normalAttackLevel ?? 0,
+    resonanceSkillLevel: build.resonanceSkillLevel ?? 0,
+    forteLevel: build.forteLevel ?? 0,
+    liberationLevel: build.liberationLevel ?? 0,
+    introLevel: build.introLevel ?? 0,
+    echoes: build.echoes ?? [],
+    rotationId: undefined,
+  };
 }
 
 function ownedFromCatalog(echo: Echo, sonatas: Sonata[]): OwnedEcho {

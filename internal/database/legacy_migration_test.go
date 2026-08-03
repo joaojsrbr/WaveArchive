@@ -50,8 +50,8 @@ func TestOpenReconcilesLegacyDatabaseWithoutMigrationHistory(t *testing.T) {
 	if err := db.SQL().QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {
 		t.Fatal(err)
 	}
-	if migrations != 16 {
-		t.Fatalf("migration count = %d, want 16", migrations)
+	if migrations != 17 {
+		t.Fatalf("migration count = %d, want 17", migrations)
 	}
 	hasOwned, err := columnExists(db.SQL(), "owned_characters", "owned")
 	if err != nil || !hasOwned {
@@ -80,8 +80,8 @@ func TestOpenRebuildsDeletedMigrationHistory(t *testing.T) {
 	if err := reopened.SQL().QueryRow("SELECT COUNT(*) FROM schema_migrations").Scan(&migrations); err != nil {
 		t.Fatal(err)
 	}
-	if migrations != 16 {
-		t.Fatalf("migration count = %d, want 16", migrations)
+	if migrations != 17 {
+		t.Fatalf("migration count = %d, want 17", migrations)
 	}
 }
 

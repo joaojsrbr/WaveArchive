@@ -317,6 +317,15 @@ func reconcileLegacySchema(db *sql.DB) error {
 		if err := markMigration(db, "0005_builds.sql"); err != nil {
 			return err
 		}
+		hasSkillLevels, err := columnExists(db, "builds", "normal_attack_level")
+		if err != nil {
+			return err
+		}
+		if hasSkillLevels {
+			if err := markMigration(db, "0017_build_skill_levels.sql"); err != nil {
+				return err
+			}
+		}
 	}
 	hasEchoes, err := tableExists(db, "echoes")
 	if err != nil {

@@ -39,7 +39,10 @@ func TestBuildLifecycleWithUndo(t *testing.T) {
 	weaponID := int64(21020015)
 	build, err := repo.Save(ctx, domain.Build{
 		Name: "Sanhua DPS", CharacterID: 1102, CharacterLevel: 90, Sequence: 6,
-		WeaponID: &weaponID, WeaponLevel: 90, WeaponRank: 1, Echoes: []domain.OwnedEcho{ownedEcho}, GameVersion: "3.6.1",
+		WeaponID: &weaponID, WeaponLevel: 90, WeaponRank: 1,
+		NormalAttackLevel: 10, ResonanceSkillLevel: 9, ForteLevel: 8,
+		LiberationLevel: 10, IntroLevel: 6,
+		Echoes: []domain.OwnedEcho{ownedEcho}, GameVersion: "3.6.1",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -47,6 +50,9 @@ func TestBuildLifecycleWithUndo(t *testing.T) {
 	copy, err := repo.Duplicate(ctx, build.ID)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if copy.ResonanceSkillLevel != 9 || copy.IntroLevel != 6 {
+		t.Fatalf("skill levels were not preserved: %#v", copy)
 	}
 	if copy.ID == build.ID || copy.Name != "Sanhua DPS — cópia" || len(copy.Echoes) != 1 {
 		t.Fatalf("unexpected duplicate: %#v", copy)

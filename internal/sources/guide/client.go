@@ -50,6 +50,32 @@ type role struct {
 	RoleGbID any `json:"roleGbId"`
 }
 
+type avatarItem struct {
+	RoleGbID any `json:"roleGbId"`
+	Element  struct {
+		GbID       any    `json:"gbId"`
+		PictureURL string `json:"pictureUrl"`
+	} `json:"element"`
+}
+
+type buildIconDetail struct {
+	Weapon struct {
+		Items []struct {
+			WeaponType struct {
+				GbID       any    `json:"gbId"`
+				PictureURL string `json:"pictureUrl"`
+			} `json:"weaponType"`
+		} `json:"items"`
+	} `json:"weapon"`
+}
+
+type BuildIconSources struct {
+	ElementID     string
+	ElementURL    string
+	WeaponTypeID  string
+	WeaponTypeURL string
+}
+
 func (c *Client) Fetch(ctx context.Context, characterID int64, language string) ([]domain.CharacterGuide, error) {
 	items, usedLanguage, err := c.list(ctx, characterID, language)
 	if err != nil && language != "en" {
@@ -80,6 +106,49 @@ func (c *Client) Fetch(ctx context.Context, characterID int64, language string) 
 		guides = append(guides, domain.CharacterGuide{ID: id, CharacterID: characterID, Name: name, Source: source, LikeCount: item.LikeCount, Language: usedLanguage, Teams: teams, DataJSON: string(wrapped)})
 	}
 	return guides, nil
+}
+
+func (c *Client) BuildExportIcons(ctx context.Context, characterID int64) (BuildIconSources, error) {
+	var avatarEnv envelope
+	if err := c.get(ctx, baseURL+"/role/avatar/list", "en", &avatarEnv); err != nil {
+		return BuildIconSources{}, err
+	}
+	if avatarEnv.Code != 200 || len(avatarEnv.Data) == 0 {
+		return BuildIconSources{}, errors.New("avatar list is empty")
+	}
+	var avatars []avatarItem
+	if err := json.Unmarshal(avatarEnv.Data, &avatars); err != nil {
+		return BuildIconSources{}, err
+	}
+	result := BuildIconSources{}
+	for _, avatar := range avatars {
+		if intID(avatar.RoleGbID) == characterID {
+			result.ElementID = stringID(avatar.Element.GbID)
+			result.ElementURL = avatar.Element.PictureURL
+			break
+		}
+	}
+
+	items, _, err := c.list(ctx, characterID, "en")
+	if err != nil {
+		return result, err
+	}
+	sort.SliceStable(items, func(i, j int) bool { return items[i].LikeCount > items[j].LikeCount })
+	guideID := stringID(items[0].ID)
+	rawDetail, err := c.info(ctx, guideID, "en")
+	if err != nil {
+		return result, err
+	}
+	var detail buildIconDetail
+	if err := json.Unmarshal(rawDetail, &detail); err != nil {
+		return result, err
+	}
+	if len(detail.Weapon.Items) > 0 {
+		weaponType := detail.Weapon.Items[0].WeaponType
+		result.WeaponTypeID = stringID(weaponType.GbID)
+		result.WeaponTypeURL = weaponType.PictureURL
+	}
+	return result, nil
 }
 func (c *Client) list(ctx context.Context, characterID int64, language string) ([]listItem, string, error) {
 	var env envelope

@@ -1,0 +1,5 @@
+ALTER TABLE builds ADD COLUMN normal_attack_level INTEGER NOT NULL DEFAULT 0 CHECK (normal_attack_level BETWEEN 0 AND 10);
+ALTER TABLE builds ADD COLUMN resonance_skill_level INTEGER NOT NULL DEFAULT 0 CHECK (resonance_skill_level BETWEEN 0 AND 10);
+ALTER TABLE builds ADD COLUMN forte_level INTEGER NOT NULL DEFAULT 0 CHECK (forte_level BETWEEN 0 AND 10);
+ALTER TABLE builds ADD COLUMN liberation_level INTEGER NOT NULL DEFAULT 0 CHECK (liberation_level BETWEEN 0 AND 10);
+ALTER TABLE builds ADD COLUMN intro_level INTEGER NOT NULL DEFAULT 0 CHECK (intro_level BETWEEN 0 AND 10);

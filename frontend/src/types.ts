@@ -231,6 +231,11 @@ export type Build = {
   weaponIcon: string;
   weaponLevel: number;
   weaponRank: number;
+  normalAttackLevel: number;
+  resonanceSkillLevel: number;
+  forteLevel: number;
+  liberationLevel: number;
+  introLevel: number;
   echoes: OwnedEcho[];
   targetEnemyId?: number;
   rotationId?: number;
@@ -545,6 +550,10 @@ export type CharacterGuide = {
   dataJson: string;
   syncedAt: string;
 };
+export type BuildExportIcons = {
+  elementIconPath: string;
+  weaponTypeIconPath: string;
+};
 export type KnowledgeSource = {
   entityType: string;
   entityId: string;
@@ -777,6 +786,7 @@ export type BackendAPI = {
   ListCharacterGuides(characterId: number): Promise<CharacterGuide[]>;
   ListAllCharacterGuides(): Promise<CharacterGuide[]>;
   SyncCharacterGuides(characterId: number, language: string): Promise<CharacterGuide[]>;
+  GetBuildExportIcons(characterId: number): Promise<BuildExportIcons>;
   SearchLocalKnowledge(query: string, limit: number): Promise<KnowledgeSource[]>;
   ListBuildVersions(id: number): Promise<BuildVersion[]>;
   GetSettings(): Promise<AppSettings>;

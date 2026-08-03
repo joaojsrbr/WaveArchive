@@ -26,7 +26,10 @@ func (r *BuildSQLite) List(ctx context.Context) ([]domain.Build, error) {
 		SELECT b.id, b.name, b.character_id, c.name, c.icon_path,
 		       b.character_level, b.sequence, b.weapon_id,
 		       COALESCE(w.name, ''), COALESCE(w.icon_path, ''),
-		       b.weapon_level, b.weapon_rank, b.notes, b.favorite, b.locked,
+		       b.weapon_level, b.weapon_rank,
+		       b.normal_attack_level, b.resonance_skill_level, b.forte_level,
+		       b.liberation_level, b.intro_level,
+		       b.notes, b.favorite, b.locked,
 		       b.game_version, b.created_at, b.updated_at,
 		       b.target_enemy_id,b.rotation_id,b.conditions
 		FROM builds b
@@ -46,6 +49,8 @@ func (r *BuildSQLite) List(ctx context.Context) ([]domain.Build, error) {
 			&build.ID, &build.Name, &build.CharacterID, &build.CharacterName,
 			&build.CharacterIcon, &build.CharacterLevel, &build.Sequence, &weaponID,
 			&build.WeaponName, &build.WeaponIcon, &build.WeaponLevel, &build.WeaponRank,
+			&build.NormalAttackLevel, &build.ResonanceSkillLevel, &build.ForteLevel,
+			&build.LiberationLevel, &build.IntroLevel,
 			&build.Notes, &build.Favorite, &build.Locked, &build.GameVersion,
 			&build.CreatedAt, &build.UpdatedAt, &build.TargetEnemyID, &build.RotationID, &build.Conditions,
 		); err != nil {
@@ -78,11 +83,15 @@ func (r *BuildSQLite) Save(ctx context.Context, build domain.Build) (domain.Buil
 		result, err := r.db.ExecContext(ctx, `
 			INSERT INTO builds(
 				name, character_id, character_level, sequence, weapon_id,
-				weapon_level, weapon_rank, notes, favorite, locked, game_version,
+				weapon_level, weapon_rank, normal_attack_level, resonance_skill_level,
+				forte_level, liberation_level, intro_level,
+				notes, favorite, locked, game_version,
 				target_enemy_id,rotation_id,conditions
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, build.Name, build.CharacterID, build.CharacterLevel, build.Sequence,
 			nullableID(build.WeaponID), build.WeaponLevel, build.WeaponRank,
+			build.NormalAttackLevel, build.ResonanceSkillLevel, build.ForteLevel,
+			build.LiberationLevel, build.IntroLevel,
 			build.Notes, build.Favorite, build.Locked, build.GameVersion,
 			nullableID(build.TargetEnemyID), nullableID(build.RotationID), build.Conditions)
 		if err != nil {
@@ -101,11 +110,15 @@ func (r *BuildSQLite) Save(ctx context.Context, build domain.Build) (domain.Buil
 		result, err := r.db.ExecContext(ctx, `
 			UPDATE builds SET
 				name=?, character_id=?, character_level=?, sequence=?, weapon_id=?,
-				weapon_level=?, weapon_rank=?, notes=?, favorite=?, locked=?,
+				weapon_level=?, weapon_rank=?, normal_attack_level=?, resonance_skill_level=?,
+				forte_level=?, liberation_level=?, intro_level=?,
+				notes=?, favorite=?, locked=?,
 				game_version=?, target_enemy_id=?,rotation_id=?,conditions=?,updated_at=CURRENT_TIMESTAMP
 			WHERE id=? AND deleted_at IS NULL
 		`, build.Name, build.CharacterID, build.CharacterLevel, build.Sequence,
 			nullableID(build.WeaponID), build.WeaponLevel, build.WeaponRank,
+			build.NormalAttackLevel, build.ResonanceSkillLevel, build.ForteLevel,
+			build.LiberationLevel, build.IntroLevel,
 			build.Notes, build.Favorite, build.Locked, build.GameVersion,
 			nullableID(build.TargetEnemyID), nullableID(build.RotationID), build.Conditions, build.ID)
 		if err != nil {
@@ -162,7 +175,10 @@ func (r *BuildSQLite) get(ctx context.Context, id int64) (domain.Build, error) {
 		SELECT b.id, b.name, b.character_id, c.name, c.icon_path,
 		       b.character_level, b.sequence, b.weapon_id,
 		       COALESCE(w.name, ''), COALESCE(w.icon_path, ''),
-		       b.weapon_level, b.weapon_rank, b.notes, b.favorite, b.locked,
+		       b.weapon_level, b.weapon_rank,
+		       b.normal_attack_level, b.resonance_skill_level, b.forte_level,
+		       b.liberation_level, b.intro_level,
+		       b.notes, b.favorite, b.locked,
 		       b.game_version, b.created_at, b.updated_at,
 		       b.target_enemy_id,b.rotation_id,b.conditions
 		FROM builds b JOIN characters c ON c.id=b.character_id
@@ -172,6 +188,8 @@ func (r *BuildSQLite) get(ctx context.Context, id int64) (domain.Build, error) {
 		&build.ID, &build.Name, &build.CharacterID, &build.CharacterName,
 		&build.CharacterIcon, &build.CharacterLevel, &build.Sequence, &weaponID,
 		&build.WeaponName, &build.WeaponIcon, &build.WeaponLevel, &build.WeaponRank,
+		&build.NormalAttackLevel, &build.ResonanceSkillLevel, &build.ForteLevel,
+		&build.LiberationLevel, &build.IntroLevel,
 		&build.Notes, &build.Favorite, &build.Locked, &build.GameVersion,
 		&build.CreatedAt, &build.UpdatedAt, &build.TargetEnemyID, &build.RotationID, &build.Conditions,
 	)

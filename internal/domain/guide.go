@@ -13,6 +13,11 @@ type CharacterGuide struct {
 	DataJSON    string    `json:"dataJson"`
 	SyncedAt    string    `json:"syncedAt"`
 }
+
+type BuildExportIcons struct {
+	ElementIconPath    string `json:"elementIconPath"`
+	WeaponTypeIconPath string `json:"weaponTypeIconPath"`
+}
 type KnowledgeSource struct {
 	EntityType string `json:"entityType"`
 	EntityID   string `json:"entityId"`
